@@ -1,4 +1,4 @@
-// GoNature Health & Mindset Audit - Main Application Logic
+// GoNature Health & Lifestyle Assessment - Main Application Logic
 // One-question-at-a-time premium experience
 
 // App State
@@ -134,7 +134,6 @@ document.head.appendChild(style);
 function renderQuestion(direction = 'none') {
     const question = AppState.allQuestions[AppState.currentQuestionIndex];
     const questionNumber = AppState.currentQuestionIndex + 1;
-    const totalQuestions = AppState.allQuestions.length;
 
     updateProgress();
     updateNavigation();
@@ -179,6 +178,7 @@ function renderQuestionInput(question) {
 
         case 'single':
         case 'categorical':
+        case 'scored':
             return `
                 <div class="options-grid">
                     ${question.options.map(opt => `
@@ -219,7 +219,6 @@ function renderQuestionInput(question) {
 }
 
 function attachQuestionListeners(question) {
-    // Text inputs
     const textInput = document.querySelector('.text-input');
     if (textInput) {
         textInput.addEventListener('input', (e) => {
@@ -229,7 +228,6 @@ function attachQuestionListeners(question) {
         textInput.focus();
     }
 
-    // Radio options (single, categorical)
     document.querySelectorAll('.option-label').forEach(label => {
         label.addEventListener('click', (e) => {
             const radio = label.querySelector('.option-radio');
@@ -250,20 +248,15 @@ function attachQuestionListeners(question) {
         });
     });
 
-    // Personality scale circles (likert)
     const scaleCircles = document.querySelectorAll('.scale-circle');
     if (scaleCircles.length > 0) {
         scaleCircles.forEach(circle => {
             circle.addEventListener('click', () => {
                 const value = circle.dataset.value;
-
                 AppState.answers[question.id] = value;
-
                 scaleCircles.forEach(c => c.classList.remove('selected'));
                 circle.classList.add('selected');
-
                 removeInvalidState();
-
                 setTimeout(() => {
                     nextQuestion();
                 }, 600);
@@ -307,197 +300,384 @@ function calculateAndShowResults() {
 }
 
 function getScoreLevel(score) {
-    if (score >= 80) return { label: 'Critical', color: '#e74c3c' };
-    if (score >= 60) return { label: 'High', color: '#ff5722' };
-    if (score >= 40) return { label: 'Moderate', color: '#ff9800' };
-    if (score >= 20) return { label: 'Low', color: '#4caf50' };
-    return { label: 'Minimal', color: '#4db89a' };
+    if (score >= 75) return { label: 'Excellent', color: '#22c55e' };
+    if (score >= 50) return { label: 'Good', color: '#f97316' };
+    if (score >= 25) return { label: 'Needs Attention', color: '#ef4444' };
+    return { label: 'Critical', color: '#dc2626' };
 }
 
-function getReadinessLevel(score) {
-    if (score >= 80) return { label: 'Highly Ready', color: '#4db89a' };
-    if (score >= 60) return { label: 'Ready', color: '#4caf50' };
-    if (score >= 40) return { label: 'Somewhat Ready', color: '#ff9800' };
-    return { label: 'Exploring', color: '#94a3b8' };
+function getSnapshotLabel(score) {
+    if (score >= 75) return { label: 'Strong', color: '#22c55e' };
+    if (score >= 50) return { label: 'Transitioning', color: '#3b82f6' };
+    return { label: 'Needs Focus', color: '#ef4444' };
 }
 
 function renderResults() {
     const { results } = AppState;
-    const overallLevel = getScoreLevel(results.overallConcern);
-    const readinessLevel = getReadinessLevel(results.readinessScore);
+    const phaseLabel = results.overallScore <= 40 ? 'Depleted' : results.overallScore <= 70 ? 'Transitioning' : 'Flowing';
+
+    const physLabel = getSnapshotLabel(results.physicalHealth);
+    const mentLabel = getSnapshotLabel(results.mentalWellness);
+    const natLabel = getSnapshotLabel(results.naturalAlignment);
 
     const html = `
-        <div class="blueprint-header">
-            <h1 class="blueprint-title">${results.userName}, Here Is Your Health & Mindset Report</h1>
-            <p class="blueprint-subtitle">
-                Your answers reveal important patterns about your brain signals, body alignment, and lifestyle habits.
-                Understanding these patterns is the <strong>first step toward transformation</strong>.
+        <!-- Header -->
+        <div class="report-header">
+            <div class="report-badge">PERSONALIZED HEALTH & LIFESTYLE BLUEPRINT</div>
+            <h1 class="report-title">Health Report for ${results.userName}</h1>
+            <p class="report-intro">
+                You are neither broken nor behind. This report is a <span class="text-highlight">thoughtful
+                reflection</span> of where your <span class="text-highlight">body, mind</span>, and
+                <span class="text-highlight">habits</span> may have shifted out of balance \u2014 and a clear path to restore
+                wellness and vitality.
             </p>
+            <div class="report-callout">
+                <span class="callout-dot"></span>
+                YOUR JOURNEY TO BETTER HEALTH STARTS WITH AWARENESS. GENTLE, CONSISTENT STEPS ARE THE MOST EFFECTIVE PATH FORWARD.
+            </div>
         </div>
 
-        <!-- Overall Score -->
-        <div class="dimension-breakdown" style="text-align: center; margin-bottom: 30px;">
-            <h2 class="section-title">Overall Health Concern Level</h2>
-            <div style="display: flex; justify-content: center; align-items: center; gap: 30px; flex-wrap: wrap; margin: 20px 0;">
-                <div style="text-align: center;">
-                    <div style="width: 120px; height: 120px; border-radius: 50%; border: 6px solid ${overallLevel.color}; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
-                        <span style="font-size: 2rem; font-weight: 800; color: ${overallLevel.color};">${results.overallConcern}%</span>
+        <!-- Overall Score Card -->
+        <div class="report-card overall-score-card">
+            <div class="score-card-header">
+                <span class="card-dot"></span>
+                <span class="card-label">Overall Alignment</span>
+            </div>
+            <div class="overall-score-layout">
+                <div class="score-text-side">
+                    <div class="score-label-small">HEALTH ALIGNMENT SCORE</div>
+                    <div class="score-big-number" style="color: ${results.phaseColor};">${results.overallScore}</div>
+                    <div class="score-ranges">
+                        <span>0\u201340: Needs Attention</span>
+                        <span>41\u201370: Building</span>
+                        <span>71\u2013100: Thriving</span>
                     </div>
-                    <span style="font-weight: 600; color: ${overallLevel.color}; font-size: 1rem;">${overallLevel.label} Concern</span>
+                    <div class="phase-section">
+                        <p class="phase-prefix">${results.userName}, you are currently in the</p>
+                        <h3 class="phase-name" style="color: ${results.phaseColor};">${results.phase}</h3>
+                        <p class="phase-description">${results.phaseDescription}</p>
+                    </div>
                 </div>
-                <div style="text-align: center;">
-                    <div style="width: 120px; height: 120px; border-radius: 50%; border: 6px solid ${readinessLevel.color}; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
-                        <span style="font-size: 2rem; font-weight: 800; color: ${readinessLevel.color};">${results.readinessScore}%</span>
-                    </div>
-                    <span style="font-weight: 600; color: ${readinessLevel.color}; font-size: 1rem;">${readinessLevel.label}</span>
+                <div class="score-ring-side">
+                    <div class="donut-ring" id="overall-donut"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Dimension Breakdown Bars -->
-        <div class="dimension-breakdown">
-            <h2 class="section-title">Your Health Dimension Breakdown</h2>
-            <div class="health-bars" style="max-width: 600px; margin: 20px auto;">
+        <!-- Quick Snapshot -->
+        <div class="report-card">
+            <h2 class="card-title">Quick Snapshot</h2>
+            <p class="card-subtitle">A closer look at how your health systems are functioning beneath the surface.</p>
+            <div class="snapshot-tags">
+                <span class="snapshot-tag" style="border-color: ${physLabel.color}; color: ${physLabel.color};">Physical: ${physLabel.label}</span>
+                <span class="snapshot-tag" style="border-color: ${mentLabel.color}; color: ${mentLabel.color};">Mental: ${mentLabel.label}</span>
+                <span class="snapshot-tag" style="border-color: ${natLabel.color}; color: ${natLabel.color};">Natural Living: ${natLabel.label}</span>
+            </div>
+            <div class="snapshot-bars">
+                <div class="snapshot-bar-row">
+                    <span class="bar-label">Physical Health</span>
+                    <div class="bar-track">
+                        <div class="bar-fill bar-fill-animate" style="width: 0%; --target-width: ${results.physicalHealth}%; background: linear-gradient(90deg, #ef4444, #f97316);"></div>
+                    </div>
+                    <span class="bar-value">${results.physicalHealth}</span>
+                </div>
+                <div class="snapshot-bar-row">
+                    <span class="bar-label">Mental Wellness</span>
+                    <div class="bar-track">
+                        <div class="bar-fill bar-fill-animate" style="width: 0%; --target-width: ${results.mentalWellness}%; background: linear-gradient(90deg, #3b82f6, #8b5cf6);"></div>
+                    </div>
+                    <span class="bar-value">${results.mentalWellness}</span>
+                </div>
+                <div class="snapshot-bar-row">
+                    <span class="bar-label">Natural Alignment</span>
+                    <div class="bar-track">
+                        <div class="bar-fill bar-fill-animate" style="width: 0%; --target-width: ${results.naturalAlignment}%; background: linear-gradient(90deg, #22c55e, #14b8a6);"></div>
+                    </div>
+                    <span class="bar-value">${results.naturalAlignment}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health Wheel (Radar Chart) -->
+        <div class="report-card">
+            <h2 class="card-title">Your Health Wheel</h2>
+            <p class="card-subtitle">This radar shows how evenly your health is distributed across all core dimensions.</p>
+            <div class="radar-chart-container">
+                <canvas id="healthRadarChart" width="350" height="350"></canvas>
+            </div>
+        </div>
+
+        <!-- Dimension Scores -->
+        <div class="report-card">
+            <h2 class="card-title">Dimension Scores</h2>
+            <p class="card-subtitle">Each bar is a 0\u2013100 score based on your answers. Lower scores are where your body is asking for more care.</p>
+            <div class="dimension-pills">
                 ${results.allDimensions.map(d => {
-                    const level = getScoreLevel(d.score);
+                    const pct = d.score;
                     return `
-                    <div style="margin-bottom: 16px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                            <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">${d.info.icon} ${d.info.name}</span>
-                            <span style="font-weight: 700; color: ${level.color}; font-size: 0.9rem;">${d.score}% - ${level.label}</span>
+                    <div class="dimension-pill-item">
+                        <div class="pill-bar-container">
+                            <div class="pill-bar-bg">
+                                <div class="pill-bar-fill pill-fill-animate" style="height: 0%; --target-height: ${pct}%; background: ${d.info.color};"></div>
+                            </div>
                         </div>
-                        <div style="width: 100%; height: 12px; background: var(--bg-input); border-radius: 6px; overflow: hidden;">
-                            <div class="dim-bar-fill-3" style="width: ${d.score}%; height: 100%; background: ${d.info.color}; border-radius: 6px;"></div>
-                        </div>
+                        <span class="pill-label">${d.info.icon} ${d.info.name}</span>
+                        <span class="pill-score" style="color: ${d.info.color};">${pct}%</span>
                     </div>
                 `;
                 }).join('')}
-                <!-- Readiness bar -->
-                <div style="margin-bottom: 16px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">${dimensionInfo.READINESS.icon} ${dimensionInfo.READINESS.name}</span>
-                        <span style="font-weight: 700; color: ${readinessLevel.color}; font-size: 0.9rem;">${results.readinessScore}% - ${readinessLevel.label}</span>
-                    </div>
-                    <div style="width: 100%; height: 12px; background: var(--bg-input); border-radius: 6px; overflow: hidden;">
-                        <div class="dim-bar-fill-3" style="width: ${results.readinessScore}%; height: 100%; background: ${dimensionInfo.READINESS.color}; border-radius: 6px;"></div>
-                    </div>
-                </div>
+            </div>
+            <div class="dimension-insight">
+                <p>Your strongest area is <strong style="color: ${results.strongestAreas[0]?.info?.color || '#22c55e'};">${results.strongestAreas[0]?.info?.name || 'Self Awareness'}</strong>.
+                Continue nurturing this strength \u2014 it serves as the foundation that will support improvement across other dimensions.</p>
             </div>
         </div>
 
-        <!-- Primary Finding / Archetype -->
-        <div class="oto-section" style="background: linear-gradient(135deg, ${results.archetype.color}11, ${results.archetype.color}22); border: 1px solid ${results.archetype.color}33; border-radius: var(--radius-xl); padding: 30px; margin: 30px 0;">
-            <div style="text-align: center; max-width: 700px; margin: 0 auto;">
-                <span style="font-size: 3rem;">${results.archetype.icon}</span>
-                <h2 style="font-family: var(--font-display); font-size: 1.5rem; margin: 10px 0; color: ${results.archetype.color};">${results.archetype.name}</h2>
-                <p style="color: var(--text-secondary); font-size: 1rem; line-height: 1.7;">
-                    ${results.archetype.description}
-                </p>
-                <p style="font-weight: 700; margin-top: 16px; color: ${results.archetype.color}; font-size: 1.1rem;">
-                    The secret you need most: ${results.archetype.secret}
-                </p>
-            </div>
+        <!-- Areas Needing Attention -->
+        <div class="report-card attention-card">
+            <p>The areas requiring your most immediate attention are
+            <strong>${results.topConcerns[0]?.info?.name || ''}</strong> and
+            <strong>${results.topConcerns[1]?.info?.name || ''}</strong>.
+            These are where focused care and intention will yield the most meaningful results.</p>
         </div>
 
-        <!-- Top 3 Concerns -->
-        <div class="dimension-breakdown" style="margin: 30px 0;">
-            <h2 class="section-title">Your Top 3 Areas of Concern</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 20px;">
-                ${results.topConcerns.map((concern, index) => `
-                    <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px; text-align: center; border: 1px solid var(--border-subtle); box-shadow: var(--shadow-soft);">
-                        <div style="font-size: 2rem; margin-bottom: 8px;">${concern.info.icon}</div>
-                        <div style="font-weight: 700; color: var(--text-primary); font-size: 1rem;">#${index + 1} ${concern.info.name}</div>
-                        <div style="font-weight: 800; color: ${concern.info.color}; font-size: 1.5rem; margin-top: 8px;">${concern.score}%</div>
+        <!-- Core Pattern -->
+        <div class="report-card pattern-card">
+            <div class="pattern-badge">WHAT'S REALLY GOING ON</div>
+            <h2 class="card-title">Your Core Health Pattern</h2>
+            <p class="pattern-description">${results.corePattern.pattern}</p>
+            <h3 class="pattern-subtitle">How this shows up in daily life</h3>
+            <ul class="pattern-list">
+                ${results.corePattern.dailyLife.map(item => `<li>${item}</li>`).join('')}
+            </ul>
+        </div>
+
+        <!-- Root Cause -->
+        <div class="report-card">
+            <h3 class="root-cause-title">Root cause in health terms</h3>
+            <p class="root-cause-text">At its core, your body still operates on patterns that have accumulated over time.
+            Until these patterns shift through consistent, natural lifestyle changes, your health reserves will continue to deplete under pressure.</p>
+        </div>
+
+        <!-- 7-Day Plan -->
+        <div class="report-card plan-card">
+            <div class="plan-badge">YOUR NEXT 7 DAYS</div>
+            <h2 class="card-title">7-Day Health Reset</h2>
+            <p class="card-subtitle">This structured 7-day programme is designed to help you translate awareness into consistent
+            action \u2014 gentle, repeatable practices your body can rely upon, even during life\u2019s most demanding moments.</p>
+            <div class="plan-timeline">
+                ${results.sevenDayPlan.map(day => `
+                    <div class="plan-day">
+                        <div class="plan-dot" style="background: ${day.color};"></div>
+                        <div class="plan-day-content">
+                            <div class="plan-day-label">DAY ${day.day}</div>
+                            <div class="plan-day-text">
+                                <strong style="color: ${day.color};">${day.label}:</strong> ${day.task}
+                            </div>
+                        </div>
                     </div>
                 `).join('')}
             </div>
         </div>
 
-        <!-- 4 Secrets Teaser -->
-        <div class="roadmap-section" style="margin: 40px 0;">
-            <h2 class="section-title">The 4 Secrets You Need to Come Out of Lifestyle Diseases</h2>
-            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 24px;">
-                In the 3-hour workshop, Vishal will reveal these powerful secrets tailored to people with your exact profile:
-            </p>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
-                <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px; border-left: 4px solid #e74c3c; box-shadow: var(--shadow-soft);">
-                    <div style="font-weight: 700; color: #e74c3c; margin-bottom: 8px;">\u{1F9E0} Secret #1</div>
-                    <div style="font-weight: 600; color: var(--text-primary);">Neuroscience of Brain Healing</div>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 6px;">Learn the signaling language of your brain. Understand the signs & symptoms before a big problem comes.</p>
-                </div>
-                <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px; border-left: 4px solid #ff9800; box-shadow: var(--shadow-soft);">
-                    <div style="font-weight: 700; color: #ff9800; margin-bottom: 8px;">\u{1F3C3} Secret #2</div>
-                    <div style="font-weight: 600; color: var(--text-primary);">Simplified Human Anatomy</div>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 6px;">Your body needs simplicity. Learn what you can do from home to restore your natural energy and rhythm.</p>
-                </div>
-                <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px; border-left: 4px solid #2196f3; box-shadow: var(--shadow-soft);">
-                    <div style="font-weight: 700; color: #2196f3; margin-bottom: 8px;">\u{1F48A} Secret #3</div>
-                    <div style="font-weight: 600; color: var(--text-primary);">Preventing Medication Errors</div>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 6px;">The side effects of medications and supplements are rising every day. Learn how to protect yourself.</p>
-                </div>
-                <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px; border-left: 4px solid #9c27b0; box-shadow: var(--shadow-soft);">
-                    <div style="font-weight: 700; color: #9c27b0; margin-bottom: 8px;">\u{1F4A1} Secret #4</div>
-                    <div style="font-weight: 600; color: var(--text-primary);">One-Word Treatment</div>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 6px;">A single approach accepted by Allopathy, Homeopathy, Ayurveda, Unani & Siddha that you can start from day one.</p>
+        <!-- Personal Note -->
+        <div class="report-card note-card">
+            <div class="note-header">
+                <div class="note-avatar">V</div>
+                <div>
+                    <div class="note-badge">A PERSONAL NOTE FROM VISHAL</div>
                 </div>
             </div>
+            <p class="note-text">I understand what it means to feel stuck in unhealthy patterns \u2014 while quietly knowing you deserve better.
+            This report is not a judgement; it is a compassionate guide showing you precisely where your body is calling for attention, better habits,
+            and genuine support. Take even one meaningful step from this report today, and you will already be on the path to a more balanced, fulfilling life.</p>
+            <p class="note-signature">With care, Vishal</p>
         </div>
 
-        <!-- Workshop CTA -->
-        <div class="oto-section diamond-program" style="text-align: center; padding: 40px 20px;">
-            <div style="max-width: 700px; margin: 0 auto;">
-                <span style="display: inline-block; background: var(--accent-mint-dim); color: var(--accent-mint); font-weight: 600; padding: 6px 16px; border-radius: var(--radius-full); font-size: 0.9rem; margin-bottom: 16px;">\u{1F33F} Your Next Step</span>
-                <h2 style="font-family: var(--font-display); font-size: 1.75rem; margin-bottom: 16px; color: var(--text-primary);">Join Vishal's 3-Hour Health Transformation Workshop</h2>
-                <p style="color: var(--text-secondary); font-size: 1rem; line-height: 1.7; margin-bottom: 20px;">
-                    The most saddest thing on planet Earth is living your life with diseases and hoping someday you will be out of it.
-                    Stop hoping. Start acting. This workshop will change the way you look at health forever.
-                </p>
+        <!-- Disclaimer -->
+        <p class="report-disclaimer">This report is not a medical diagnosis. It is a reflective assessment designed to illuminate
+        where your lifestyle may benefit from thoughtful, sustained support.</p>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 24px 0; text-align: left;">
-                    <div style="display: flex; align-items: flex-start; gap: 8px;">
-                        <span style="color: var(--accent-mint); font-weight: 700; font-size: 1.2rem;">&#10004;</span>
-                        <span style="font-size: 0.95rem;">Brain Healing Neuroscience</span>
-                    </div>
-                    <div style="display: flex; align-items: flex-start; gap: 8px;">
-                        <span style="color: var(--accent-mint); font-weight: 700; font-size: 1.2rem;">&#10004;</span>
-                        <span style="font-size: 0.95rem;">Simplified Human Anatomy</span>
-                    </div>
-                    <div style="display: flex; align-items: flex-start; gap: 8px;">
-                        <span style="color: var(--accent-mint); font-weight: 700; font-size: 1.2rem;">&#10004;</span>
-                        <span style="font-size: 0.95rem;">Medication Error Prevention</span>
-                    </div>
-                    <div style="display: flex; align-items: flex-start; gap: 8px;">
-                        <span style="color: var(--accent-mint); font-weight: 700; font-size: 1.2rem;">&#10004;</span>
-                        <span style="font-size: 0.95rem;">One-Word Treatment Method</span>
+        <!-- CTA Section -->
+        <div class="report-card cta-card">
+            <div class="cta-label">SPECIAL OFFER FOR YOU</div>
+            <h2 class="cta-title">21-Day Health Reset Program</h2>
+            <p class="cta-description">It\u2019s time to honor your need for restoration. The 21-Day Health Reset is designed specifically
+            for people like you who are ready to transform their health with natural, sustainable habits.</p>
+            <div class="cta-features">
+                <div class="cta-feature">
+                    <span class="cta-feature-icon">\u{1F33F}</span>
+                    <div>
+                        <div class="cta-feature-title">Daily Health Practices</div>
+                        <div class="cta-feature-desc">5-10 minute rituals designed for busy lifestyles</div>
                     </div>
                 </div>
-
-                <p style="font-weight: 700; color: var(--accent-gold); font-size: 1.1rem; margin: 20px 0;">
-                    By Vishal \u2014 India's Leading Naturopath & Nutritionist
-                </p>
-
-                <button class="oto-cta" onclick="window.open('https://example.com/workshop', '_blank')">
-                    <span>Enroll in the Workshop Now</span>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M5 12h14M12 5l7 7-7 7"/>
-                    </svg>
-                </button>
+                <div class="cta-feature">
+                    <span class="cta-feature-icon">\u{1F9D8}</span>
+                    <div>
+                        <div class="cta-feature-title">Guided Wellness</div>
+                        <div class="cta-feature-desc">Customized for your health phase</div>
+                    </div>
+                </div>
+                <div class="cta-feature">
+                    <span class="cta-feature-icon">\u{1F4F1}</span>
+                    <div>
+                        <div class="cta-feature-title">WhatsApp Community</div>
+                        <div class="cta-feature-desc">Connect with like-minded people</div>
+                    </div>
+                </div>
+                <div class="cta-feature">
+                    <span class="cta-feature-icon">\u{1F4D3}</span>
+                    <div>
+                        <div class="cta-feature-title">Health Tracking Journal</div>
+                        <div class="cta-feature-desc">Monitor your transformation daily</div>
+                    </div>
+                </div>
             </div>
+            <button class="cta-button" onclick="window.open('https://example.com/program', '_blank')">
+                <span>Yes! I Want to Reset My Health</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+            </button>
+            <p class="cta-guarantee">100% Satisfaction Guarantee | Start transforming today</p>
         </div>
 
-        <div style="text-align: center; margin: 40px 0;">
-            <button class="btn-secondary" onclick="retakeQuiz()">Retake Audit</button>
+        <!-- Retake -->
+        <div class="retake-section">
+            <button class="btn-secondary retake-btn" onclick="retakeQuiz()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 4v6h6M23 20v-6h-6"/>
+                    <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/>
+                </svg>
+                <span>Retake Quiz</span>
+            </button>
         </div>
     `;
 
     DOM.resultsContainer.innerHTML = html;
 
-    // Animate bars after rendering
+    // Animate after render
     setTimeout(() => {
-        document.querySelectorAll('.dim-bar-fill-3').forEach(bar => {
-            bar.style.transition = 'width 1s ease-out';
-        });
+        renderDonutChart(results.overallScore, results.phaseColor);
+        renderRadarChart(results);
+        animateBars();
+    }, 200);
+}
+
+function renderDonutChart(score, color) {
+    const container = document.getElementById('overall-donut');
+    if (!container) return;
+
+    const size = 160;
+    const strokeWidth = 12;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const offset = circumference - (score / 100) * circumference;
+
+    container.innerHTML = `
+        <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="donut-svg">
+            <circle cx="${size/2}" cy="${size/2}" r="${radius}"
+                fill="none" stroke="#e5e7eb" stroke-width="${strokeWidth}"/>
+            <circle cx="${size/2}" cy="${size/2}" r="${radius}"
+                fill="none" stroke="${color}" stroke-width="${strokeWidth}"
+                stroke-dasharray="${circumference}"
+                stroke-dashoffset="${circumference}"
+                stroke-linecap="round"
+                transform="rotate(-90 ${size/2} ${size/2})"
+                class="donut-progress"
+                style="--target-offset: ${offset}; --circumference: ${circumference};" />
+            <text x="${size/2}" y="${size/2 + 8}" text-anchor="middle"
+                font-size="2.2rem" font-weight="800" fill="${color}" font-family="var(--font-display)">${score}</text>
+        </svg>
+    `;
+
+    // Animate the ring
+    setTimeout(() => {
+        const progressCircle = container.querySelector('.donut-progress');
+        if (progressCircle) {
+            progressCircle.style.transition = 'stroke-dashoffset 1.5s ease-out';
+            progressCircle.style.strokeDashoffset = offset;
+        }
     }, 100);
+}
+
+function renderRadarChart(results) {
+    const canvas = document.getElementById('healthRadarChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const ctx = canvas.getContext('2d');
+    const labels = results.allDimensions.map(d => d.info.name);
+    const data = results.allDimensions.map(d => d.score);
+
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Your Score',
+                data: data,
+                backgroundColor: 'rgba(77, 184, 154, 0.2)',
+                borderColor: 'rgba(77, 184, 154, 0.8)',
+                borderWidth: 2,
+                pointBackgroundColor: 'rgba(77, 184, 154, 1)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        stepSize: 25,
+                        display: false
+                    },
+                    grid: {
+                        color: 'rgba(0,0,0,0.06)'
+                    },
+                    angleLines: {
+                        color: 'rgba(0,0,0,0.06)'
+                    },
+                    pointLabels: {
+                        font: {
+                            family: "'Inter', sans-serif",
+                            size: 11,
+                            weight: '500'
+                        },
+                        color: '#475569'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function animateBars() {
+    // Animate snapshot bars
+    document.querySelectorAll('.bar-fill-animate').forEach(bar => {
+        const targetWidth = bar.style.getPropertyValue('--target-width');
+        setTimeout(() => {
+            bar.style.transition = 'width 1.2s ease-out';
+            bar.style.width = targetWidth;
+        }, 100);
+    });
+
+    // Animate pill bars
+    document.querySelectorAll('.pill-fill-animate').forEach(bar => {
+        const targetHeight = bar.style.getPropertyValue('--target-height');
+        setTimeout(() => {
+            bar.style.transition = 'height 1.2s ease-out';
+            bar.style.height = targetHeight;
+        }, 100);
+    });
 }
 
 function retakeQuiz() {

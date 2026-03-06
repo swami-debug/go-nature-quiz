@@ -1,23 +1,22 @@
 // Quiz Data Structure
-// Energy Alignment Quiz – Ritu (Manifestation & Energy Coach)
+// GoNature Health & Lifestyle Assessment
 
 const quizData = {
-    // Section 0 - Basic Info (NOT SCORED)
-    section0: {
-        id: 'basic-info',
+    aboutYou: {
+        id: 'about-you',
         title: 'About You',
-        subtitle: 'Let\'s get to know you better',
-        icon: '👋',
+        subtitle: 'Tell us a bit about yourself',
+        icon: '\u{1F44B}',
         scored: false,
         questions: [
             {
-                id: 'S0Q1',
+                id: 'userName',
                 type: 'text',
-                text: 'What\'s your name?',
+                text: "What's your name?",
                 placeholder: 'Enter your name'
             },
             {
-                id: 'S0Q2',
+                id: 'userAge',
                 type: 'single',
                 text: 'What is your age range?',
                 options: [
@@ -29,7 +28,7 @@ const quizData = {
                 ]
             },
             {
-                id: 'S0Q3',
+                id: 'userRole',
                 type: 'single',
                 text: 'What is your primary role?',
                 options: [
@@ -42,23 +41,11 @@ const quizData = {
                 ]
             },
             {
-                id: 'S0Q4',
-                type: 'single',
-                text: 'What is your current relationship status?',
-                options: [
-                    { value: 'single', label: 'Single' },
-                    { value: 'relationship', label: 'In a Relationship' },
-                    { value: 'married', label: 'Married' },
-                    { value: 'divorced', label: 'Divorced / Separated' },
-                    { value: 'widowed', label: 'Widowed' }
-                ]
-            },
-            {
-                id: 'S0Q5',
+                id: 'userPeople',
                 type: 'single',
                 text: 'How many people are you responsible for daily?',
                 options: [
-                    { value: '0', label: 'Just myself' },
+                    { value: 'myself', label: 'Just myself' },
                     { value: '1-2', label: '1-2 people' },
                     { value: '3-4', label: '3-4 people' },
                     { value: '5+', label: '5 or more people' }
@@ -67,424 +54,530 @@ const quizData = {
         ]
     },
 
-    // Section 1 - Responsibility Load (RO) - All NEGATIVE
-    section1: {
-        id: 'responsibility-load',
-        title: 'Responsibility Load',
-        subtitle: 'How much are you carrying on your shoulders?',
-        icon: '⚖️',
+    hydration: {
+        id: 'hydration-habits',
+        title: 'Hydration Habits',
+        subtitle: 'Your daily water intake patterns',
+        icon: '\u{1F4A7}',
         scored: true,
-        dimension: 'RO',
+        dimension: 'HYDRATION',
         questions: [
             {
-                id: 'S1Q1',
-                type: 'likert',
-                text: 'I feel like I\'m carrying too many responsibilities at once.',
-                negative: true
-            },
-            {
-                id: 'S1Q2',
-                type: 'likert',
-                text: 'I often sacrifice my own needs for others.',
-                negative: true
-            },
-            {
-                id: 'S1Q3',
-                type: 'likert',
-                text: 'I feel guilty when I take time for myself.',
-                negative: true
-            },
-            {
-                id: 'S1Q4',
-                type: 'likert',
-                text: 'I\'m constantly managing everyone else\'s problems.',
-                negative: true
-            },
-            {
-                id: 'S1Q5',
-                type: 'likert',
-                text: 'I rarely have time to focus on my own dreams and goals.',
-                negative: true
-            },
-            {
-                id: 'S1Q6',
-                type: 'likert',
-                text: 'I feel exhausted from always being the "strong one".',
-                negative: true
-            }
-        ]
-    },
-
-    // Section 2 - Emotional Overwhelm (EO) - All NEGATIVE
-    section2: {
-        id: 'emotional-overwhelm',
-        title: 'Emotional Overwhelm',
-        subtitle: 'Understanding your emotional energy patterns',
-        icon: '💭',
-        scored: true,
-        dimension: 'EO',
-        questions: [
-            {
-                id: 'S2Q1',
-                type: 'likert',
-                text: 'I often feel emotionally drained by the end of the day.',
-                negative: true
-            },
-            {
-                id: 'S2Q2',
-                type: 'likert',
-                text: 'Small things irritate me more than they should.',
-                negative: true
-            },
-            {
-                id: 'S2Q3',
-                type: 'likert',
-                text: 'I struggle to process my emotions in a healthy way.',
-                negative: true
-            },
-            {
-                id: 'S2Q4',
-                type: 'likert',
-                text: 'I feel anxious or worried about the future.',
-                negative: true
-            },
-            {
-                id: 'S2Q5',
-                type: 'likert',
-                text: 'I often feel like crying but hold it in.',
-                negative: true
-            },
-            {
-                id: 'S2Q6',
-                type: 'likert',
-                text: 'I feel disconnected from joy and happiness.',
-                negative: true
-            }
-        ]
-    },
-
-    // Section 3 - Body & Health (BD) - Mixed scoring
-    section3: {
-        id: 'body-health',
-        title: 'Body & Health',
-        subtitle: 'Your physical energy and well-being',
-        icon: '🌿',
-        scored: true,
-        dimension: 'BD',
-        questions: [
-            {
-                id: 'S3Q1',
-                type: 'likert',
-                text: 'I have consistent energy throughout the day.',
-                negative: false, // POSITIVE - reverse scored
-                reverse: true
-            },
-            {
-                id: 'S3Q2',
-                type: 'likert',
-                text: 'I often experience physical tension, headaches, or body pain.',
-                negative: true
-            },
-            {
-                id: 'S3Q3',
-                type: 'likert',
-                text: 'I struggle with fatigue or low energy levels.',
-                negative: true
-            },
-            {
-                id: 'S3Q4',
-                type: 'categorical',
-                text: 'How many hours of quality sleep do you typically get?',
-                negative: true,
-                mapping: 'sleep',
+                id: 'Q5',
+                type: 'scored',
+                text: 'How many liters of water do you drink daily?',
                 options: [
-                    { value: '<5h', label: 'Less than 5 hours', score: 100 },
-                    { value: '5-6h', label: '5-6 hours', score: 75 },
-                    { value: '6-7h', label: '6-7 hours', score: 50 },
-                    { value: '7-8h', label: '7-8 hours', score: 25 },
-                    { value: '8h+', label: '8+ hours', score: 0 }
+                    { value: 'less-1', label: 'Less than 1 liter', score: 1 },
+                    { value: '1-2', label: '1\u20132 liters', score: 2 },
+                    { value: '2-3', label: '2\u20133 liters', score: 3 },
+                    { value: 'more-3', label: 'More than 3 liters', score: 4 }
                 ]
             },
             {
-                id: 'S3Q5',
-                type: 'categorical',
-                text: 'How often do you engage in physical movement or exercise?',
-                negative: true,
-                mapping: 'movement',
+                id: 'Q6',
+                type: 'scored',
+                text: 'When do you usually drink your first glass of water?',
                 options: [
-                    { value: 'almost-never', label: 'Almost never', score: 100 },
-                    { value: '1-2-days', label: '1-2 days per week', score: 75 },
-                    { value: '3-4-days', label: '3-4 days per week', score: 50 },
-                    { value: '5+-days', label: '5+ days per week', score: 25 }
+                    { value: 'immediately', label: 'Immediately after waking up', score: 4 },
+                    { value: 'after-breakfast', label: 'After breakfast', score: 3 },
+                    { value: 'mid-morning', label: 'Mid-morning', score: 2 },
+                    { value: 'no-habit', label: "I don\u2019t have a fixed habit", score: 1 }
                 ]
             },
             {
-                id: 'S3Q6',
+                id: 'Q7',
+                type: 'scored',
+                text: 'Do you drink warm water in the morning?',
+                options: [
+                    { value: 'always', label: 'Always', score: 4 },
+                    { value: 'often', label: 'Often', score: 3 },
+                    { value: 'sometimes', label: 'Sometimes', score: 2 },
+                    { value: 'never', label: 'Never', score: 1 }
+                ]
+            },
+            {
+                id: 'Q8',
+                type: 'scored',
+                text: 'How often do you drink sugary drinks or soda?',
+                options: [
+                    { value: 'daily', label: 'Daily', score: 1 },
+                    { value: 'few-week', label: 'Few times a week', score: 2 },
+                    { value: 'rarely', label: 'Rarely', score: 3 },
+                    { value: 'never', label: 'Never', score: 4 }
+                ]
+            },
+            {
+                id: 'Q9',
                 type: 'likert',
-                text: 'I feel comfortable and confident in my body.',
-                negative: false, // POSITIVE - reverse scored
+                text: 'I feel well hydrated during the day.'
+            }
+        ]
+    },
+
+    food: {
+        id: 'food-habits',
+        title: 'Food Habits',
+        subtitle: 'Your daily nutrition patterns',
+        icon: '\u{1F34E}',
+        scored: true,
+        dimension: 'FOOD',
+        questions: [
+            {
+                id: 'Q10',
+                type: 'scored',
+                text: 'How many meals do you eat daily?',
+                options: [
+                    { value: '1-2', label: '1\u20132 meals', score: 2 },
+                    { value: '3', label: '3 meals', score: 4 },
+                    { value: '4', label: '4 meals', score: 3 },
+                    { value: 'more-4', label: 'More than 4', score: 1 }
+                ]
+            },
+            {
+                id: 'Q11',
+                type: 'scored',
+                text: 'How often do you eat fresh fruits?',
+                options: [
+                    { value: 'daily', label: 'Daily', score: 4 },
+                    { value: 'few-week', label: 'Few times a week', score: 3 },
+                    { value: 'rarely', label: 'Rarely', score: 2 },
+                    { value: 'never', label: 'Never', score: 1 }
+                ]
+            },
+            {
+                id: 'Q12',
+                type: 'scored',
+                text: 'How often do you eat vegetables?',
+                options: [
+                    { value: 'every-meal', label: 'Every meal', score: 4 },
+                    { value: 'once-day', label: 'Once a day', score: 3 },
+                    { value: 'few-week', label: 'Few times a week', score: 2 },
+                    { value: 'rarely', label: 'Rarely', score: 1 }
+                ]
+            },
+            {
+                id: 'Q13',
+                type: 'scored',
+                text: 'How often do you eat processed or packaged foods?',
+                options: [
+                    { value: 'daily', label: 'Daily', score: 1 },
+                    { value: 'few-week', label: 'Few times a week', score: 2 },
+                    { value: 'occasionally', label: 'Occasionally', score: 3 },
+                    { value: 'never', label: 'Never', score: 4 }
+                ]
+            },
+            {
+                id: 'Q14',
+                type: 'scored',
+                text: 'Do you eat breakfast regularly?',
+                options: [
+                    { value: 'always', label: 'Always', score: 4 },
+                    { value: 'often', label: 'Often', score: 3 },
+                    { value: 'sometimes', label: 'Sometimes', score: 2 },
+                    { value: 'never', label: 'Never', score: 1 }
+                ]
+            },
+            {
+                id: 'Q15',
+                type: 'scored',
+                text: 'At what time do you usually eat dinner?',
+                options: [
+                    { value: 'before-7', label: 'Before 7 PM', score: 4 },
+                    { value: '7-8', label: '7\u20138 PM', score: 3 },
+                    { value: '8-9', label: '8\u20139 PM', score: 2 },
+                    { value: 'after-9', label: 'After 9 PM', score: 1 }
+                ]
+            },
+            {
+                id: 'Q16',
+                type: 'likert',
+                text: 'Do you eat food slowly and mindfully?'
+            },
+            {
+                id: 'Q17',
+                type: 'scored',
+                text: 'How often do you eat outside food?',
+                options: [
+                    { value: 'daily', label: 'Daily', score: 1 },
+                    { value: 'weekly', label: 'Weekly', score: 2 },
+                    { value: 'occasionally', label: 'Occasionally', score: 3 },
+                    { value: 'rarely', label: 'Rarely', score: 4 }
+                ]
+            },
+            {
+                id: 'Q18',
+                type: 'likert',
+                text: 'Do you include natural foods like sprouts, fruits, or salads in your diet?'
+            },
+            {
+                id: 'Q19',
+                type: 'scored',
+                text: 'How often do you feel heavy or bloated after eating?',
+                options: [
+                    { value: 'often', label: 'Often', score: 1 },
+                    { value: 'sometimes', label: 'Sometimes', score: 2 },
+                    { value: 'rarely', label: 'Rarely', score: 3 },
+                    { value: 'never', label: 'Never', score: 4 }
+                ]
+            }
+        ]
+    },
+
+    sleep: {
+        id: 'sleep-habits',
+        title: 'Sleep Habits',
+        subtitle: 'Your rest and recovery patterns',
+        icon: '\u{1F634}',
+        scored: true,
+        dimension: 'SLEEP',
+        questions: [
+            {
+                id: 'Q20',
+                type: 'scored',
+                text: 'How many hours do you sleep daily?',
+                options: [
+                    { value: 'less-5', label: 'Less than 5', score: 1 },
+                    { value: '5-6', label: '5\u20136 hours', score: 2 },
+                    { value: '6-7', label: '6\u20137 hours', score: 3 },
+                    { value: '7-8', label: '7\u20138 hours', score: 5 },
+                    { value: 'more-8', label: 'More than 8', score: 4 }
+                ]
+            },
+            {
+                id: 'Q21',
+                type: 'scored',
+                text: 'What time do you usually go to bed?',
+                options: [
+                    { value: 'before-10', label: 'Before 10 PM', score: 4 },
+                    { value: '10-11', label: '10\u201311 PM', score: 3 },
+                    { value: '11-12', label: '11\u201312 PM', score: 2 },
+                    { value: 'after-midnight', label: 'After midnight', score: 1 }
+                ]
+            },
+            {
+                id: 'Q22',
+                type: 'scored',
+                text: 'How often do you wake up feeling refreshed?',
+                options: [
+                    { value: 'always', label: 'Always', score: 4 },
+                    { value: 'often', label: 'Often', score: 3 },
+                    { value: 'sometimes', label: 'Sometimes', score: 2 },
+                    { value: 'rarely', label: 'Rarely', score: 1 }
+                ]
+            },
+            {
+                id: 'Q23',
+                type: 'scored',
+                text: 'Do you use your phone before sleeping?',
+                options: [
+                    { value: 'always', label: 'Always', score: 1 },
+                    { value: 'often', label: 'Often', score: 2 },
+                    { value: 'sometimes', label: 'Sometimes', score: 3 },
+                    { value: 'never', label: 'Never', score: 4 }
+                ]
+            },
+            {
+                id: 'Q24',
+                type: 'likert',
+                text: 'I struggle to fall asleep quickly.',
                 reverse: true
             }
         ]
     },
 
-    // Section 4 - Belief Blocks (BB) - S4Q5 is positive (reverse), others negative
-    section4: {
-        id: 'belief-blocks',
-        title: 'Belief Blocks',
-        subtitle: 'Uncovering limiting patterns in your mindset',
-        icon: '🔓',
+    activity: {
+        id: 'physical-activity',
+        title: 'Physical Activity',
+        subtitle: 'Your movement and exercise habits',
+        icon: '\u{1F3C3}',
         scored: true,
-        dimension: 'BB',
+        dimension: 'ACTIVITY',
         questions: [
             {
-                id: 'S4Q1',
-                type: 'likert',
-                text: 'I often doubt my abilities and potential.',
-                negative: true
-            },
-            {
-                id: 'S4Q2',
-                type: 'likert',
-                text: 'I believe that good things don\'t last for me.',
-                negative: true
-            },
-            {
-                id: 'S4Q3',
-                type: 'likert',
-                text: 'I feel unworthy of abundance and success.',
-                negative: true
-            },
-            {
-                id: 'S4Q4',
-                type: 'likert',
-                text: 'I have a hard time receiving compliments or help.',
-                negative: true
-            },
-            {
-                id: 'S4Q5',
-                type: 'likert',
-                text: 'I believe I can create the life I desire.',
-                negative: false, // POSITIVE - reverse scored
-                reverse: true
-            },
-            {
-                id: 'S4Q6',
-                type: 'likert',
-                text: 'I compare myself negatively to others.',
-                negative: true
-            }
-        ]
-    },
-
-    // Section 5 - Spiritual Alignment (SP) - All POSITIVE
-    section5: {
-        id: 'spiritual-alignment',
-        title: 'Spiritual Alignment',
-        subtitle: 'Your connection to purpose and higher self',
-        icon: '✨',
-        scored: true,
-        dimension: 'SP',
-        questions: [
-            {
-                id: 'S5Q1',
-                type: 'likert',
-                text: 'I feel connected to a purpose greater than myself.',
-                negative: false
-            },
-            {
-                id: 'S5Q2',
-                type: 'likert',
-                text: 'I trust that the universe/life is supporting me.',
-                negative: false
-            },
-            {
-                id: 'S5Q3',
-                type: 'likert',
-                text: 'I practice gratitude regularly.',
-                negative: false
-            },
-            {
-                id: 'S5Q4',
-                type: 'likert',
-                text: 'I take time for meditation, prayer, or self-reflection.',
-                negative: false
-            },
-            {
-                id: 'S5Q5',
-                type: 'likert',
-                text: 'I feel aligned with my intuition and inner wisdom.',
-                negative: false
-            },
-            {
-                id: 'S5Q6',
-                type: 'likert',
-                text: 'I experience moments of peace and inner calm.',
-                negative: false
-            }
-        ]
-    },
-
-    // Section 6 - Support & Environment (SS) - S6Q4 is negative (reverse), others positive
-    section6: {
-        id: 'support-environment',
-        title: 'Support & Environment',
-        subtitle: 'Your circle of influence and surroundings',
-        icon: '🤝',
-        scored: true,
-        dimension: 'SS',
-        questions: [
-            {
-                id: 'S6Q1',
-                type: 'likert',
-                text: 'I have people who genuinely support my growth.',
-                negative: false
-            },
-            {
-                id: 'S6Q2',
-                type: 'likert',
-                text: 'My home environment feels peaceful and nurturing.',
-                negative: false
-            },
-            {
-                id: 'S6Q3',
-                type: 'likert',
-                text: 'I feel safe expressing my true self with my close ones.',
-                negative: false
-            },
-            {
-                id: 'S6Q4',
-                type: 'likert',
-                text: 'I often feel drained by the people around me.',
-                negative: true, // NEGATIVE - needs to be reverse scored
-                reverse: true
-            },
-            {
-                id: 'S6Q5',
-                type: 'likert',
-                text: 'I have at least one person I can fully open up to.',
-                negative: false
-            }
-        ]
-    },
-
-    // Section 7 - Readiness (Partially Scored)
-    section7: {
-        id: 'readiness',
-        title: 'Readiness for Transformation',
-        subtitle: 'Your commitment to change',
-        icon: '🚀',
-        scored: true,
-        dimension: 'RS',
-        questions: [
-            {
-                id: 'S7Q1',
-                type: 'categorical',
-                text: 'How ready are you to invest time and energy in your transformation?',
-                mapping: 'readiness',
+                id: 'Q25',
+                type: 'scored',
+                text: 'How often do you exercise?',
                 options: [
-                    { value: 'not-ready', label: 'Not ready right now', score: 0 },
-                    { value: 'maybe-months', label: 'Maybe in a few months', score: 33 },
-                    { value: 'ready-need-help', label: 'Ready, but need accountability', score: 66 },
-                    { value: '100-ready', label: '100% ready to start now!', score: 100 }
+                    { value: 'daily', label: 'Daily', score: 4 },
+                    { value: '3-4-week', label: '3\u20134 times a week', score: 3 },
+                    { value: 'once-week', label: 'Once a week', score: 2 },
+                    { value: 'rarely', label: 'Rarely', score: 1 }
                 ]
             },
             {
-                id: 'S7Q2',
-                type: 'single',
-                text: 'What is your biggest challenge right now?',
-                scored: false,
+                id: 'Q26',
+                type: 'scored',
+                text: 'What type of exercise do you usually do?',
                 options: [
-                    { value: 'overwhelm', label: 'Feeling overwhelmed and exhausted' },
-                    { value: 'confidence', label: 'Lack of confidence and self-belief' },
-                    { value: 'direction', label: 'Not knowing my direction in life' },
-                    { value: 'health', label: 'Health and energy issues' },
-                    { value: 'relationships', label: 'Relationship challenges' },
-                    { value: 'finances', label: 'Financial stress' }
+                    { value: 'walking', label: 'Walking', score: 3 },
+                    { value: 'yoga', label: 'Yoga', score: 4 },
+                    { value: 'gym', label: 'Gym workout', score: 3 },
+                    { value: 'none', label: 'None', score: 1 }
                 ]
             },
             {
-                id: 'S7Q3',
-                type: 'categorical',
-                text: 'What level of investment are you comfortable with for your transformation?',
-                mapping: 'investment',
+                id: 'Q27',
+                type: 'scored',
+                text: 'How many minutes do you move or walk daily?',
                 options: [
-                    { value: '<1000', label: 'Under ₹1,000', score: 25 },
-                    { value: '1000-3000', label: '₹1,000 - ₹3,000', score: 50 },
-                    { value: '3000-5000', label: '₹3,000 - ₹5,000', score: 75 },
-                    { value: '5000+', label: '₹5,000+', score: 100 }
+                    { value: 'less-15', label: 'Less than 15 minutes', score: 1 },
+                    { value: '15-30', label: '15\u201330 minutes', score: 2 },
+                    { value: '30-60', label: '30\u201360 minutes', score: 3 },
+                    { value: 'more-60', label: 'More than 60 minutes', score: 4 }
+                ]
+            },
+            {
+                id: 'Q28',
+                type: 'likert',
+                text: 'Do you stretch your body regularly?'
+            },
+            {
+                id: 'Q29',
+                type: 'scored',
+                text: 'How often do you spend time outdoors?',
+                options: [
+                    { value: 'daily', label: 'Daily', score: 4 },
+                    { value: 'few-week', label: 'Few times a week', score: 3 },
+                    { value: 'occasionally', label: 'Occasionally', score: 2 },
+                    { value: 'rarely', label: 'Rarely', score: 1 }
+                ]
+            }
+        ]
+    },
+
+    stress: {
+        id: 'stress-mental-health',
+        title: 'Stress & Mental Health',
+        subtitle: 'Your emotional wellness patterns',
+        icon: '\u{1F9E0}',
+        scored: true,
+        dimension: 'STRESS',
+        questions: [
+            {
+                id: 'Q30',
+                type: 'scored',
+                text: 'How stressed do you feel in daily life?',
+                options: [
+                    { value: 'very', label: 'Very stressed', score: 1 },
+                    { value: 'moderate', label: 'Moderately stressed', score: 2 },
+                    { value: 'slightly', label: 'Slightly stressed', score: 3 },
+                    { value: 'not', label: 'Not stressed', score: 4 }
+                ]
+            },
+            {
+                id: 'Q31',
+                type: 'likert',
+                text: 'How often do you feel overwhelmed with responsibilities?',
+                reverse: true
+            },
+            {
+                id: 'Q32',
+                type: 'scored',
+                text: 'Do you practice meditation or breathing exercises?',
+                options: [
+                    { value: 'daily', label: 'Daily', score: 4 },
+                    { value: 'sometimes', label: 'Sometimes', score: 3 },
+                    { value: 'rarely', label: 'Rarely', score: 2 },
+                    { value: 'never', label: 'Never', score: 1 }
+                ]
+            },
+            {
+                id: 'Q33',
+                type: 'scored',
+                text: 'How often do you take breaks during work?',
+                options: [
+                    { value: 'every-hour', label: 'Every hour', score: 4 },
+                    { value: 'few-daily', label: 'Few times daily', score: 3 },
+                    { value: 'once-day', label: 'Once a day', score: 2 },
+                    { value: 'rarely', label: 'Rarely', score: 1 }
+                ]
+            },
+            {
+                id: 'Q34',
+                type: 'likert',
+                text: 'Do you feel mentally relaxed at the end of the day?'
+            }
+        ]
+    },
+
+    natural: {
+        id: 'natural-lifestyle',
+        title: 'Natural Lifestyle',
+        subtitle: 'Aligned with GoNature',
+        icon: '\u{1F33F}',
+        scored: true,
+        dimension: 'NATURAL',
+        questions: [
+            {
+                id: 'Q35',
+                type: 'scored',
+                text: 'How often do you expose yourself to sunlight?',
+                options: [
+                    { value: 'daily', label: 'Daily', score: 4 },
+                    { value: 'few-week', label: 'Few times a week', score: 3 },
+                    { value: 'rarely', label: 'Rarely', score: 2 },
+                    { value: 'never', label: 'Never', score: 1 }
+                ]
+            },
+            {
+                id: 'Q36',
+                type: 'scored',
+                text: 'Do you walk barefoot on natural ground (grass/soil)?',
+                options: [
+                    { value: 'often', label: 'Often', score: 4 },
+                    { value: 'sometimes', label: 'Sometimes', score: 3 },
+                    { value: 'rarely', label: 'Rarely', score: 2 },
+                    { value: 'never', label: 'Never', score: 1 }
+                ]
+            },
+            {
+                id: 'Q37',
+                type: 'likert',
+                text: 'How often do you practice deep breathing in fresh air?'
+            },
+            {
+                id: 'Q38',
+                type: 'scored',
+                text: 'Do you prefer natural remedies before medicines?',
+                options: [
+                    { value: 'always', label: 'Always', score: 4 },
+                    { value: 'often', label: 'Often', score: 3 },
+                    { value: 'sometimes', label: 'Sometimes', score: 2 },
+                    { value: 'never', label: 'Never', score: 1 }
+                ]
+            },
+            {
+                id: 'Q39',
+                type: 'scored',
+                text: 'How often do you consume herbal drinks or natural juices?',
+                options: [
+                    { value: 'daily', label: 'Daily', score: 4 },
+                    { value: 'few-week', label: 'Few times a week', score: 3 },
+                    { value: 'rarely', label: 'Rarely', score: 2 },
+                    { value: 'never', label: 'Never', score: 1 }
+                ]
+            }
+        ]
+    },
+
+    awareness: {
+        id: 'lifestyle-awareness',
+        title: 'Lifestyle Awareness',
+        subtitle: 'Your daily health consciousness',
+        icon: '\u{1F9CD}',
+        scored: true,
+        dimension: 'AWARENESS',
+        questions: [
+            {
+                id: 'Q40',
+                type: 'scored',
+                text: 'How often do you check your health indicators (weight, BP, etc.)?',
+                options: [
+                    { value: 'monthly', label: 'Monthly', score: 4 },
+                    { value: 'few-year', label: 'Few times a year', score: 3 },
+                    { value: 'rarely', label: 'Rarely', score: 2 },
+                    { value: 'never', label: 'Never', score: 1 }
+                ]
+            },
+            {
+                id: 'Q41',
+                type: 'likert',
+                text: 'Do you feel energetic throughout the day?'
+            },
+            {
+                id: 'Q42',
+                type: 'scored',
+                text: 'How often do you feel tired during the day?',
+                options: [
+                    { value: 'often', label: 'Often', score: 1 },
+                    { value: 'sometimes', label: 'Sometimes', score: 2 },
+                    { value: 'rarely', label: 'Rarely', score: 3 },
+                    { value: 'never', label: 'Never', score: 4 }
+                ]
+            },
+            {
+                id: 'Q43',
+                type: 'likert',
+                text: 'Do you spend time relaxing without screens?'
+            },
+            {
+                id: 'Q44',
+                type: 'scored',
+                text: 'How often do you laugh or engage in enjoyable activities?',
+                options: [
+                    { value: 'daily', label: 'Daily', score: 4 },
+                    { value: 'few-week', label: 'Few times a week', score: 3 },
+                    { value: 'rarely', label: 'Rarely', score: 2 },
+                    { value: 'never', label: 'Never', score: 1 }
+                ]
+            }
+        ]
+    },
+
+    selfAwareness: {
+        id: 'self-awareness',
+        title: 'Self Awareness',
+        subtitle: 'Your readiness for change',
+        icon: '\u{1F331}',
+        scored: true,
+        dimension: 'SELF_AWARENESS',
+        questions: [
+            {
+                id: 'Q45',
+                type: 'likert',
+                text: 'Do you believe lifestyle changes can improve your health?'
+            },
+            {
+                id: 'Q46',
+                type: 'scored',
+                text: 'How motivated are you to improve your health?',
+                options: [
+                    { value: 'very', label: 'Very motivated', score: 4 },
+                    { value: 'somewhat', label: 'Somewhat motivated', score: 3 },
+                    { value: 'slightly', label: 'Slightly motivated', score: 2 },
+                    { value: 'not', label: 'Not motivated', score: 1 }
+                ]
+            },
+            {
+                id: 'Q47',
+                type: 'likert',
+                text: 'How open are you to learning natural healing methods?'
+            },
+            {
+                id: 'Q48',
+                type: 'scored',
+                text: 'How ready are you to adopt healthier habits?',
+                options: [
+                    { value: 'very', label: 'Very ready', score: 4 },
+                    { value: 'somewhat', label: 'Somewhat ready', score: 3 },
+                    { value: 'slightly', label: 'Slightly ready', score: 2 },
+                    { value: 'not', label: 'Not ready', score: 1 }
+                ]
+            },
+            {
+                id: 'Q49',
+                type: 'scored',
+                text: 'Would you like guidance to improve your health naturally?',
+                options: [
+                    { value: 'yes', label: 'Yes, definitely', score: 4 },
+                    { value: 'maybe', label: 'Maybe', score: 3 },
+                    { value: 'not-sure', label: 'Not sure', score: 2 },
+                    { value: 'no', label: 'No', score: 1 }
                 ]
             }
         ]
     }
 };
 
-// Likert scale labels
-const likertLabels = {
-    1: 'Strongly Disagree',
-    2: 'Disagree',
-    3: 'Neutral',
-    4: 'Agree',
-    5: 'Strongly Agree'
-};
+const sectionOrder = ['aboutYou', 'hydration', 'food', 'sleep', 'activity', 'stress', 'natural', 'awareness', 'selfAwareness'];
 
-// Section order for navigation
-const sectionOrder = [
-    'section0',
-    'section1',
-    'section2',
-    'section3',
-    'section4',
-    'section5',
-    'section6',
-    'section7'
-];
-
-// Updated Archetype definitions with mature, professional names
-const archetypes = {
-    restingPhase: {
-        name: 'The Resting Phase',
-        icon: '🌙',
-        range: [0, 40],
-        description: 'Your energy is calling for deep restoration and gentle nurturing. Like the quiet before dawn, this phase is not a weakness—it\'s an invitation to pause, reflect, and rebuild your foundation. Your soul is asking for permission to rest, and honoring this need is the first step toward transformation. You\'ve been giving so much; now it\'s time to receive.',
-        color: '#6B7280',
-        otoMessage: 'It\'s time to honor your need for restoration. The 21-Day Energy Reset is designed specifically for women like you who have given so much and are ready to refill their well with compassion and care.'
-    },
-    awakeningPhase: {
-        name: 'The Awakening Phase',
-        icon: '🌅',
-        range: [41, 60],
-        description: 'You are in a beautiful state of emerging awareness. Like the first light of sunrise, you\'re beginning to see new possibilities and reconnect with your inner power. Some days feel aligned, others feel uncertain—this is natural. You\'re not lost; you\'re awakening. With the right support, you can move steadily toward consistent alignment and inner peace.',
-        color: '#F59E0B',
-        otoMessage: 'You\'re at a pivotal moment in your journey. The 21-Day Energy Reset will provide the daily structure and gentle guidance you need to stabilize your energy and step into consistent alignment.'
-    },
-    risingPhase: {
-        name: 'The Rising Phase',
-        icon: '🌸',
-        range: [61, 80],
-        description: 'Your energy is building beautiful momentum. You\'ve done meaningful inner work, and it shows in how you carry yourself. You understand the importance of nurturing your energy and you\'re actively cultivating it. There\'s still room to expand, but you\'re well on your way to full alignment. Your potential is blossoming.',
-        color: '#8B5CF6',
-        otoMessage: 'You\'re ready to fully bloom. The 21-Day Energy Reset will help you release any remaining blocks and accelerate your journey into radiant alignment.'
-    },
-    radiantPhase: {
-        name: 'The Radiant Phase',
-        icon: '✨',
-        range: [81, 100],
-        description: 'You are in beautiful alignment with your highest self. Your energy flows freely, your spirit is nourished, and you naturally attract abundance and opportunity. You\'ve mastered the art of self-care without guilt and understand that protecting your energy creates space for magic. People are drawn to your authentic light and presence.',
-        color: '#10B981',
-        otoMessage: 'Congratulations on your radiant alignment. The 21-Day Energy Reset will help you maintain and elevate your vibration even further, while learning advanced techniques to share your light with others.'
-    }
-};
-
-// Dimension display names and icons
 const dimensionInfo = {
-    RO: { name: 'Responsibility Load', icon: '⚖️', interpretation: 'Lower is better' },
-    EO: { name: 'Emotional Overwhelm', icon: '💭', interpretation: 'Lower is better' },
-    BD: { name: 'Body & Health Drain', icon: '🌿', interpretation: 'Lower is better' },
-    BB: { name: 'Belief Blocks', icon: '🔓', interpretation: 'Lower is better' },
-    SP: { name: 'Spiritual Alignment', icon: '✨', interpretation: 'Higher is better' },
-    SS: { name: 'Support & Environment', icon: '🤝', interpretation: 'Higher is better' },
-    OGI: { name: 'Overwhelm & Guilt Index', icon: '📊', interpretation: 'Lower is better' },
-    RCI: { name: 'Resilience & Connection Index', icon: '💪', interpretation: 'Higher is better' },
-    BMH: { name: 'Body-Mind Harmony', icon: '🧘', interpretation: 'Higher is better' }
+    HYDRATION: { name: 'Hydration', icon: '\u{1F4A7}', label: 'HYDRATION', color: '#3b82f6' },
+    FOOD: { name: 'Food Habits', icon: '\u{1F34E}', label: 'FOOD', color: '#ef4444' },
+    SLEEP: { name: 'Sleep', icon: '\u{1F634}', label: 'SLEEP', color: '#8b5cf6' },
+    ACTIVITY: { name: 'Physical Activity', icon: '\u{1F3C3}', label: 'ACTIVITY', color: '#f97316' },
+    STRESS: { name: 'Stress & Mental Health', icon: '\u{1F9E0}', label: 'STRESS', color: '#ec4899' },
+    NATURAL: { name: 'Natural Lifestyle', icon: '\u{1F33F}', label: 'NATURAL', color: '#22c55e' },
+    AWARENESS: { name: 'Lifestyle Awareness', icon: '\u{1F9CD}', label: 'AWARENESS', color: '#14b8a6' },
+    SELF_AWARENESS: { name: 'Self Awareness', icon: '\u{1F331}', label: 'SELF AWARENESS', color: '#eab308' }
 };

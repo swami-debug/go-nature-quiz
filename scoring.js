@@ -1,266 +1,209 @@
-// Scoring Logic for Energy Alignment Quiz
-// Implements all scoring rules as specified in the framework
+// GoNature Health & Lifestyle Assessment - Scoring Engine
 
 const ScoringEngine = {
-    // Likert mapping: 1→0, 2→25, 3→50, 4→75, 5→100
-    likertMap: {
-        1: 0,
-        2: 25,
-        3: 50,
-        4: 75,
-        5: 100
-    },
-
-    // Reverse score: 100 - mapped value
-    reverseScore(score) {
-        return 100 - score;
-    },
-
-    // Map Likert value to score
-    mapLikert(value) {
-        return this.likertMap[value] || 0;
-    },
-
-    // Calculate score for a single question
-    calculateQuestionScore(question, answer) {
-        if (!answer) return null;
-
-        let score;
-
-        if (question.type === 'likert') {
-            const rawScore = this.mapLikert(parseInt(answer));
-            // If the question is positive (negative: false) and reverse: true, reverse the score
-            // This applies to questions where high agreement = low burden
-            if (question.reverse) {
-                score = this.reverseScore(rawScore);
-            } else {
-                score = rawScore;
-            }
-        } else if (question.type === 'categorical') {
-            // Find the option and get its score
-            const option = question.options.find(opt => opt.value === answer);
-            score = option ? option.score : 0;
-        } else {
-            // Non-scored questions (text, single without score)
-            return null;
-        }
-
-        return score;
-    },
-
-    // Calculate dimension score (average of question scores)
-    calculateDimensionScore(sectionKey, answers) {
-        const section = quizData[sectionKey];
-        if (!section || !section.scored) return null;
-
-        const scores = [];
-
-        section.questions.forEach(question => {
-            const answer = answers[question.id];
-
-            // Skip non-scored questions
-            if (question.scored === false) return;
-
-            const score = this.calculateQuestionScore(question, answer);
-            if (score !== null) {
-                scores.push(score);
-            }
-        });
-
-        if (scores.length === 0) return null;
-
-        return scores.reduce((sum, s) => sum + s, 0) / scores.length;
-    },
-
-    // Calculate all dimension scores
-    calculateAllDimensions(answers) {
+    calculateResults(answers) {
         const dimensions = {};
 
-        // Section 1: Responsibility Load (RO)
-        dimensions.RO = this.calculateDimensionScore('section1', answers);
+        // Calculate score for each scored section
+        sectionOrder.forEach(sectionKey => {
+            const section = quizData[sectionKey];
+            if (!section.scored) return;
 
-        // Section 2: Emotional Overwhelm (EO)
-        dimensions.EO = this.calculateDimensionScore('section2', answers);
+            let totalScore = 0;
+            let maxPossible = 0;
 
-        // Section 3: Body & Health (BD)
-        dimensions.BD = this.calculateDimensionScore('section3', answers);
+            section.questions.forEach(question => {
+                const answer = answers[question.id];
+                if (!answer) return;
 
-        // Section 4: Belief Blocks (BB)
-        dimensions.BB = this.calculateDimensionScore('section4', answers);
+                if (question.type === 'likert') {
+                    const val = parseInt(answer);
+                    if (val >= 1 && val <= 5) {
+                        if (question.reverse) {
+                            totalScore += (6 - val);
+                        } else {
+                            totalScore += val;
+                        }
+                        maxPossible += 5;
+                    }
+                } else if (question.type === 'scored') {
+                    const option = question.options.find(o => o.value === answer);
+                    if (option) {
+                        totalScore += option.score;
+                        const maxOptionScore = Math.max(...question.options.map(o => o.score));
+                        maxPossible += maxOptionScore;
+                    }
+                }
+            });
 
-        // Section 5: Spiritual Alignment (SP)
-        dimensions.SP = this.calculateDimensionScore('section5', answers);
+            const percentage = maxPossible > 0 ? Math.round((totalScore / maxPossible) * 100) : 0;
 
-        // Section 6: Support & Environment (SS)
-        dimensions.SS = this.calculateDimensionScore('section6', answers);
-
-        // Section 7: Readiness Score (RS)
-        // RS = (S7Q1 + S7Q3) / 2
-        const s7q1Answer = answers['S7Q1'];
-        const s7q3Answer = answers['S7Q3'];
-
-        let s7q1Score = 0;
-        let s7q3Score = 0;
-
-        if (s7q1Answer) {
-            const q1 = quizData.section7.questions.find(q => q.id === 'S7Q1');
-            const opt1 = q1.options.find(o => o.value === s7q1Answer);
-            s7q1Score = opt1 ? opt1.score : 0;
-        }
-
-        if (s7q3Answer) {
-            const q3 = quizData.section7.questions.find(q => q.id === 'S7Q3');
-            const opt3 = q3.options.find(o => o.value === s7q3Answer);
-            s7q3Score = opt3 ? opt3.score : 0;
-        }
-
-        dimensions.RS = (s7q1Score + s7q3Score) / 2;
-
-        return dimensions;
-    },
-
-    // Calculate Composite Indices
-    calculateCompositeIndices(dimensions) {
-        const indices = {};
-
-        // OGI (Overwhelm & Guilt Index) = 0.40*RO + 0.30*EO + 0.30*BB
-        indices.OGI = (0.40 * dimensions.RO) + (0.30 * dimensions.EO) + (0.30 * dimensions.BB);
-
-        // RCI (Resilience & Connection Index) = ((100 - BB) + SP + SS) / 3
-        indices.RCI = ((100 - dimensions.BB) + dimensions.SP + dimensions.SS) / 3;
-
-        // BMH (Body-Mind Harmony) = ((100 - BD) + (100 - EO) + (100 - RO)) / 3
-        indices.BMH = ((100 - dimensions.BD) + (100 - dimensions.EO) + (100 - dimensions.RO)) / 3;
-
-        return indices;
-    },
-
-    // Calculate Final Energy Alignment Score
-    calculateEAS(indices, dimensions) {
-        // EAS = (BMH + RCI + RS) / 3
-        const eas = (indices.BMH + indices.RCI + dimensions.RS) / 3;
-        return Math.round(eas);
-    },
-
-    // Determine Archetype based on EAS
-    determineArchetype(eas) {
-        if (eas <= 40) {
-            return archetypes.restingPhase;
-        } else if (eas <= 60) {
-            return archetypes.awakeningPhase;
-        } else if (eas <= 80) {
-            return archetypes.risingPhase;
-        } else {
-            return archetypes.radiantPhase;
-        }
-    },
-
-    // Generate Key Insights based on scores
-    generateInsights(dimensions, indices, archetype) {
-        const insights = [];
-
-        // Insight 1: Based on archetype
-        insights.push({
-            icon: archetype.icon,
-            text: `As someone in <strong>${archetype.name}</strong>, ${this.getArchetypeInsight(archetype)}`
+            if (section.dimension) {
+                dimensions[section.dimension] = percentage;
+            }
         });
 
-        // Insight 2: Highest burden area
-        const burdenAreas = {
-            RO: dimensions.RO,
-            EO: dimensions.EO,
-            BD: dimensions.BD,
-            BB: dimensions.BB
-        };
-        const highestBurden = Object.entries(burdenAreas)
-            .sort((a, b) => b[1] - a[1])[0];
+        // All dimension keys except SELF_AWARENESS (used as readiness)
+        const healthDimensions = ['HYDRATION', 'FOOD', 'SLEEP', 'ACTIVITY', 'STRESS', 'NATURAL', 'AWARENESS'];
+        const healthScores = healthDimensions.map(d => dimensions[d] || 0);
+        const overallScore = Math.round(healthScores.reduce((a, b) => a + b, 0) / healthScores.length);
 
-        insights.push({
-            icon: dimensionInfo[highestBurden[0]].icon,
-            text: `Your highest energy drain is in <strong>${dimensionInfo[highestBurden[0]].name}</strong> (${Math.round(highestBurden[1])}%). This is where focused healing will have the greatest impact.`
-        });
+        // Readiness/Self Awareness score
+        const readinessScore = dimensions['SELF_AWARENESS'] || 0;
 
-        // Insight 3: Strength area
-        const strengthAreas = {
-            SP: dimensions.SP,
-            SS: dimensions.SS
-        };
-        const highestStrength = Object.entries(strengthAreas)
-            .sort((a, b) => b[1] - a[1])[0];
+        // Composite scores for Quick Snapshot
+        const physicalHealth = Math.round(
+            ((dimensions.HYDRATION || 0) + (dimensions.FOOD || 0) + (dimensions.SLEEP || 0) + (dimensions.ACTIVITY || 0)) / 4
+        );
+        const mentalWellness = Math.round(
+            ((dimensions.STRESS || 0) + (dimensions.AWARENESS || 0)) / 2
+        );
+        const naturalAlignment = Math.round(
+            ((dimensions.NATURAL || 0) + (dimensions.SELF_AWARENESS || 0)) / 2
+        );
 
-        if (highestStrength[1] >= 50) {
-            insights.push({
-                icon: dimensionInfo[highestStrength[0]].icon,
-                text: `Your strength lies in <strong>${dimensionInfo[highestStrength[0]].name}</strong> (${Math.round(highestStrength[1])}%). This is a foundation you can build upon.`
-            });
-        }
+        // Sort health dimensions by score (lowest first = needs most attention)
+        const sortedDimensions = healthDimensions
+            .map(d => ({ key: d, score: dimensions[d] || 0, info: dimensionInfo[d] }))
+            .sort((a, b) => a.score - b.score);
 
-        // Insight 4: Body-Mind Harmony
-        if (indices.BMH < 50) {
-            insights.push({
-                icon: '🧘',
-                text: `Your <strong>Body-Mind Harmony</strong> score (${Math.round(indices.BMH)}%) suggests a disconnect between your physical and emotional well-being. Prioritizing self-care routines will help restore balance.`
-            });
+        // All dimensions for radar chart
+        const allDimensionsList = [...healthDimensions, 'SELF_AWARENESS']
+            .map(d => ({ key: d, score: dimensions[d] || 0, info: dimensionInfo[d] }));
+
+        // Top concerns (lowest scoring)
+        const topConcerns = sortedDimensions.slice(0, 3);
+
+        // Strongest areas (highest scoring)
+        const strongestAreas = [...sortedDimensions].reverse().slice(0, 2);
+
+        // Determine phase
+        let phase, phaseDescription, phaseColor;
+        if (overallScore <= 40) {
+            phase = 'THE FOUNDATION PHASE';
+            phaseDescription = 'Your body is calling for attention and care. This is not a weakness \u2014 it\u2019s awareness. Small, consistent changes in your daily habits will create the biggest impact. Think of this as planting seeds that will grow into lasting health.';
+            phaseColor = '#ef4444';
+        } else if (overallScore <= 70) {
+            phase = 'THE BUILDING PHASE';
+            phaseDescription = 'You\u2019re on the right track with some healthy habits already in place. A few key areas need more focus to help you reach your optimal health. With targeted improvements, you can accelerate your wellness journey significantly.';
+            phaseColor = '#f97316';
         } else {
-            insights.push({
-                icon: '🧘',
-                text: `Your <strong>Body-Mind Harmony</strong> score (${Math.round(indices.BMH)}%) shows promising alignment between your physical and emotional states. Continue nurturing this connection.`
-            });
+            phase = 'THE THRIVING PHASE';
+            phaseDescription = 'Excellent! Your lifestyle habits are well-aligned with natural health principles. Continue nurturing what\u2019s working and fine-tune the smaller areas. You\u2019re an inspiration for others on their health journey.';
+            phaseColor = '#22c55e';
         }
 
-        // Insight 5: Readiness
-        if (dimensions.RS >= 66) {
-            insights.push({
-                icon: '🚀',
-                text: `Your <strong>Readiness for Transformation</strong> (${Math.round(dimensions.RS)}%) shows you're committed to change. This is the perfect time to take action!`
-            });
-        }
+        // Generate 7-day plan based on weakest areas
+        const sevenDayPlan = this.generate7DayPlan(topConcerns, strongestAreas);
 
-        return insights;
-    },
-
-    getArchetypeInsight(archetype) {
-        switch (archetype.name) {
-            case 'The Resting Phase':
-                return 'your energy is calling for deep restoration. Your journey begins with gentle self-compassion and honoring your need to pause.';
-            case 'The Awakening Phase':
-                return 'you\'re in a beautiful state of emerging awareness. With the right support, you can move steadily toward consistent alignment.';
-            case 'The Rising Phase':
-                return 'your energy is building momentum. A few targeted practices can help you fully step into your radiant potential.';
-            case 'The Radiant Phase':
-                return 'you\'ve cultivated beautiful alignment. Your focus now is on maintaining this vibration and sharing your authentic light.';
-            default:
-                return 'your energy profile is unique and full of potential for growth.';
-        }
-    },
-
-    // Main function to calculate everything
-    calculateResults(answers) {
-        const dimensions = this.calculateAllDimensions(answers);
-        const indices = this.calculateCompositeIndices(dimensions);
-        const eas = this.calculateEAS(indices, dimensions);
-        const archetype = this.determineArchetype(eas);
-        const insights = this.generateInsights(dimensions, indices, archetype);
+        // Generate core pattern insight
+        const corePattern = this.generateCorePattern(topConcerns, strongestAreas, overallScore);
 
         return {
-            dimensions: {
-                RO: Math.round(dimensions.RO),
-                EO: Math.round(dimensions.EO),
-                BD: Math.round(dimensions.BD),
-                BB: Math.round(dimensions.BB),
-                SP: Math.round(dimensions.SP),
-                SS: Math.round(dimensions.SS),
-                RS: Math.round(dimensions.RS)
-            },
-            indices: {
-                OGI: Math.round(indices.OGI),
-                RCI: Math.round(indices.RCI),
-                BMH: Math.round(indices.BMH)
-            },
-            eas: eas,
-            archetype: archetype,
-            insights: insights,
-            userName: answers['S0Q1'] || 'Beautiful Soul'
+            dimensions,
+            overallScore,
+            readinessScore,
+            physicalHealth,
+            mentalWellness,
+            naturalAlignment,
+            phase,
+            phaseDescription,
+            phaseColor,
+            allDimensions: allDimensionsList,
+            sortedDimensions,
+            topConcerns,
+            strongestAreas,
+            sevenDayPlan,
+            corePattern,
+            userName: answers['userName'] || 'Friend'
         };
+    },
+
+    generate7DayPlan(topConcerns, strongestAreas) {
+        const planItems = {
+            HYDRATION: {
+                label: 'HYDRATION',
+                color: '#3b82f6',
+                task: 'Start your morning with a glass of warm water before anything else. Carry a water bottle and aim for 8 glasses today.'
+            },
+            FOOD: {
+                label: 'NUTRITION',
+                color: '#ef4444',
+                task: 'Add one fresh fruit and one serving of vegetables to your meals today. Eat slowly and without distractions.'
+            },
+            SLEEP: {
+                label: 'SLEEP',
+                color: '#8b5cf6',
+                task: 'Set a bedtime alarm for 10 PM. Put your phone away 30 minutes before bed and practice 5 minutes of deep breathing.'
+            },
+            ACTIVITY: {
+                label: 'MOVEMENT',
+                color: '#f97316',
+                task: 'Take a 20-minute walk in nature. Stretch your body for 5 minutes in the morning. Move every hour.'
+            },
+            STRESS: {
+                label: 'MENTAL PEACE',
+                color: '#ec4899',
+                task: 'Practice 5 minutes of meditation or deep breathing. Take a short break every hour during work.'
+            },
+            NATURAL: {
+                label: 'NATURE',
+                color: '#22c55e',
+                task: 'Spend 15 minutes in direct sunlight. Try walking barefoot on grass. Replace one processed item with a natural alternative.'
+            },
+            AWARENESS: {
+                label: 'AWARENESS',
+                color: '#14b8a6',
+                task: 'Spend 30 minutes without any screen. Do one activity that makes you genuinely laugh or smile.'
+            }
+        };
+
+        const days = [
+            { day: 1, ...planItems[topConcerns[0]?.key] || planItems.HYDRATION },
+            { day: 2, ...planItems[topConcerns[1]?.key] || planItems.FOOD },
+            { day: 3, ...planItems[topConcerns[2]?.key] || planItems.SLEEP },
+            { day: 4, ...planItems.ACTIVITY },
+            { day: 5, ...planItems.NATURAL },
+            { day: 6, ...planItems.STRESS },
+            { day: 7, label: 'INTEGRATION', color: '#22c55e', task: 'Review your week. What felt different? Journal for 10 minutes about the changes you noticed in your body and mind.' }
+        ];
+
+        return days;
+    },
+
+    generateCorePattern(topConcerns, strongestAreas, overallScore) {
+        const weakest = topConcerns[0]?.info?.name || 'health habits';
+        const secondWeakest = topConcerns[1]?.info?.name || 'lifestyle patterns';
+        const strongest = strongestAreas[0]?.info?.name || 'self awareness';
+
+        let pattern, dailyLife;
+
+        if (overallScore <= 40) {
+            pattern = `Your daily habits have gradually drifted away from what your body naturally needs. The areas of ${weakest} and ${secondWeakest} are where your body is asking for the most support right now.`;
+            dailyLife = [
+                'You may feel low on energy or tired even after rest, because your body\'s basic needs aren\'t being fully met.',
+                'Small discomforts like bloating, headaches, or poor sleep have become so routine that they feel "normal."',
+                'You know you should make changes but feel unsure about where to start or how to sustain them.',
+                'Your strongest area is ' + strongest + ' \u2014 this shows you already have the foundation to build upon.'
+            ];
+        } else if (overallScore <= 70) {
+            pattern = `You have a good foundation in some areas, but ${weakest} and ${secondWeakest} are creating an imbalance that may be holding you back from feeling your best.`;
+            dailyLife = [
+                'You have good intentions but inconsistency in certain habits prevents you from reaching optimal health.',
+                'Some days feel great while others feel draining \u2014 this fluctuation reflects the gaps in your routine.',
+                'You are already doing well in ' + strongest + ' \u2014 building on this strength will naturally improve other areas.',
+                'With focused attention on your weaker areas, you can experience a significant shift in energy and well-being.'
+            ];
+        } else {
+            pattern = `Your lifestyle is well-aligned with natural health principles. Your consistent habits in ${strongest} set a great example. Fine-tuning ${weakest} will help you reach peak vitality.`;
+            dailyLife = [
+                'You generally feel good and energetic, with minor areas that could be optimized further.',
+                'Your healthy habits have become second nature \u2014 keep nurturing them.',
+                'You are a natural role model for those around you when it comes to health-conscious living.',
+                'Small refinements in ' + weakest + ' can take you from good health to exceptional vitality.'
+            ];
+        }
+
+        return { pattern, dailyLife };
     }
 };
