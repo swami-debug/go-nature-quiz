@@ -1,5 +1,5 @@
-// Energy Alignment Quiz - Main Application Logic
-// Redesigned for one-question-at-a-time premium experience
+// GoNature Health & Mindset Audit - Main Application Logic
+// One-question-at-a-time premium experience
 
 // App State
 const AppState = {
@@ -28,9 +28,7 @@ const DOM = {
 
 // Initialize App
 function init() {
-    // Build flat question array
     AppState.allQuestions = getAllQuestions();
-
     DOM.startBtn.addEventListener('click', startQuiz);
     DOM.prevBtn.addEventListener('click', prevQuestion);
     DOM.nextBtn.addEventListener('click', nextQuestion);
@@ -79,7 +77,6 @@ function prevQuestion() {
 }
 
 function nextQuestion() {
-    // Validate current question
     if (!validateCurrentQuestion()) {
         return;
     }
@@ -88,7 +85,6 @@ function nextQuestion() {
         AppState.currentQuestionIndex++;
         renderQuestion('next');
     } else {
-        // Calculate results and show
         calculateAndShowResults();
     }
 }
@@ -143,7 +139,6 @@ function renderQuestion(direction = 'none') {
     updateProgress();
     updateNavigation();
 
-    // Determine animation class
     let animationClass = 'fade-in';
     if (direction === 'next') animationClass = 'slide-in-right';
     if (direction === 'prev') animationClass = 'slide-in-left';
@@ -175,8 +170,8 @@ function renderQuestionInput(question) {
     switch (question.type) {
         case 'text':
             return `
-                <input type="text" 
-                    class="text-input" 
+                <input type="text"
+                    class="text-input"
                     id="${question.id}"
                     placeholder="${question.placeholder || ''}"
                     value="${currentAnswer || ''}">
@@ -197,21 +192,18 @@ function renderQuestionInput(question) {
             `;
 
         case 'likert':
-            // Personality test style circles (no slider, varying sizes)
             const selectedValue = parseInt(currentAnswer) || 0;
             return `
                 <div class="personality-scale">
                     <span class="scale-label scale-label-left">Disagree</span>
                     <div class="scale-circles">
                         ${[1, 2, 3, 4, 5].map(val => {
-                // Size classes: ends are larger, middle is smaller
                 const sizeClass = val === 1 || val === 5 ? 'size-lg' :
                     val === 2 || val === 4 ? 'size-md' : 'size-sm';
-                // Color classes: left side teal, right side green, middle neutral
                 const colorClass = val <= 2 ? 'color-disagree' :
                     val >= 4 ? 'color-agree' : 'color-neutral';
                 return `
-                                <div class="scale-circle ${sizeClass} ${colorClass} ${selectedValue === val ? 'selected' : ''}" 
+                                <div class="scale-circle ${sizeClass} ${colorClass} ${selectedValue === val ? 'selected' : ''}"
                                      data-value="${val}">
                                 </div>
                             `;
@@ -224,17 +216,6 @@ function renderQuestionInput(question) {
         default:
             return '';
     }
-}
-
-function getLikertLabel(value) {
-    const labels = {
-        1: 'Strongly Disagree',
-        2: 'Disagree',
-        3: 'Neutral',
-        4: 'Agree',
-        5: 'Strongly Agree'
-    };
-    return labels[value] || '';
 }
 
 function attachQuestionListeners(question) {
@@ -255,17 +236,14 @@ function attachQuestionListeners(question) {
             const questionId = radio.name;
             const value = radio.value;
 
-            // Update state
             AppState.answers[questionId] = value;
 
-            // Update UI
             const siblings = label.parentElement.querySelectorAll('.option-label');
             siblings.forEach(sib => sib.classList.remove('selected'));
             label.classList.add('selected');
 
             removeInvalidState();
 
-            // Auto-advance
             setTimeout(() => {
                 nextQuestion();
             }, 600);
@@ -279,16 +257,13 @@ function attachQuestionListeners(question) {
             circle.addEventListener('click', () => {
                 const value = circle.dataset.value;
 
-                // Update state
                 AppState.answers[question.id] = value;
 
-                // Update UI - remove selected from all, add to clicked
                 scaleCircles.forEach(c => c.classList.remove('selected'));
                 circle.classList.add('selected');
 
                 removeInvalidState();
 
-                // Auto-advance
                 setTimeout(() => {
                     nextQuestion();
                 }, 600);
@@ -331,525 +306,204 @@ function calculateAndShowResults() {
     renderResults();
 }
 
+function getScoreLevel(score) {
+    if (score >= 80) return { label: 'Critical', color: '#e74c3c' };
+    if (score >= 60) return { label: 'High', color: '#ff5722' };
+    if (score >= 40) return { label: 'Moderate', color: '#ff9800' };
+    if (score >= 20) return { label: 'Low', color: '#4caf50' };
+    return { label: 'Minimal', color: '#4db89a' };
+}
+
+function getReadinessLevel(score) {
+    if (score >= 80) return { label: 'Highly Ready', color: '#4db89a' };
+    if (score >= 60) return { label: 'Ready', color: '#4caf50' };
+    if (score >= 40) return { label: 'Somewhat Ready', color: '#ff9800' };
+    return { label: 'Exploring', color: '#94a3b8' };
+}
+
 function renderResults() {
     const { results } = AppState;
-
-    // Helper to determine status level
-    const getStatusLevel = (score) => {
-        if (score <= 40) return { label: 'Depleted', class: 'depleted' };
-        if (score <= 70) return { label: 'Transitioning', class: 'transitioning' };
-        return { label: 'Flowing', class: 'flowing' };
-    };
-
-    // Find weakest and strongest areas
-    const dimensionScores = [
-        { name: 'Body', key: 'BB', score: results.dimensions.BB },
-        { name: 'Emotions', key: 'EO', score: 100 - results.dimensions.EO },
-        { name: 'Mind', key: 'RO', score: 100 - results.dimensions.RO },
-        { name: 'Spirit', key: 'SP', score: results.dimensions.SP },
-        { name: 'Support', key: 'SS', score: results.dimensions.SS }
-    ];
-
-    const sorted = [...dimensionScores].sort((a, b) => a.score - b.score);
-    const weakest = sorted.slice(0, 2);
-    const strongest = sorted[sorted.length - 1];
-
-    // Calculate ring percentage
-    const ringPercent = results.eas;
-    const ringColor = results.eas <= 40 ? '#e879f9' : results.eas <= 70 ? '#c084fc' : '#22d3ee';
-
-    // Generate 7-day reset based on archetype
-    const resetPlan = generate7DayReset(results.archetype.name);
-
-    // Generate core pattern narrative
-    const corePattern = generateCorePattern(results, weakest, strongest);
+    const overallLevel = getScoreLevel(results.overallConcern);
+    const readinessLevel = getReadinessLevel(results.readinessScore);
 
     const html = `
-        <!-- Report Header -->
         <div class="blueprint-header">
-            <div class="blueprint-badge">
-                <span class="badge-dot"></span>
-                PERSONALIZED ENERGY ALIGNMENT BLUEPRINT
-            </div>
-            <h1 class="blueprint-title">Energy Report for ${results.userName}</h1>
+            <h1 class="blueprint-title">${results.userName}, Here Is Your Health & Mindset Report</h1>
             <p class="blueprint-subtitle">
-                You are neither broken nor behind. This report is a thoughtful reflection of where your body, mind, 
-                emotions, and spirit may have shifted into survival mode — and a clear path to restore balance and vitality.
+                Your answers reveal important patterns about your brain signals, body alignment, and lifestyle habits.
+                Understanding these patterns is the <strong>first step toward transformation</strong>.
             </p>
         </div>
-        
-        <!-- Status Banner -->
-        <div class="status-banner status-${getStatusLevel(results.eas).class}">
-            <span class="status-dot"></span>
-            ${getStatusMessage(results.eas)}
-        </div>
-        
-        <!-- Main Score Section -->
-        <div class="score-section">
-            <div class="score-left">
-                <div class="section-badge">
-                    <span class="badge-dot"></span>
-                    Overall Alignment
+
+        <!-- Overall Score -->
+        <div class="dimension-breakdown" style="text-align: center; margin-bottom: 30px;">
+            <h2 class="section-title">Overall Health Concern Level</h2>
+            <div style="display: flex; justify-content: center; align-items: center; gap: 30px; flex-wrap: wrap; margin: 20px 0;">
+                <div style="text-align: center;">
+                    <div style="width: 120px; height: 120px; border-radius: 50%; border: 6px solid ${overallLevel.color}; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
+                        <span style="font-size: 2rem; font-weight: 800; color: ${overallLevel.color};">${results.overallConcern}%</span>
+                    </div>
+                    <span style="font-weight: 600; color: ${overallLevel.color}; font-size: 1rem;">${overallLevel.label} Concern</span>
                 </div>
-                <h2 class="energy-score-label">ENERGY ALIGNMENT SCORE</h2>
-                <div class="score-number">${results.eas}</div>
-                <div class="score-legend">
-                    <span><strong>0–40:</strong> Depleted</span>
-                    <span><strong>41–70:</strong> Transitioning</span>
-                    <span><strong>71–100:</strong> Flowing</span>
-                </div>
-                <p class="archetype-intro">${results.userName}, you are currently in the</p>
-                <h3 class="archetype-title" style="color: ${ringColor}">${results.archetype.name.toUpperCase()}</h3>
-                <p class="archetype-desc">${results.archetype.description}</p>
-            </div>
-            <div class="score-right">
-                <div class="score-ring" style="--ring-color: ${ringColor}; --ring-percent: ${ringPercent}">
-                    <svg viewBox="0 0 100 100">
-                        <circle class="ring-bg" cx="50" cy="50" r="45"/>
-                        <circle class="ring-fill" cx="50" cy="50" r="45"/>
-                    </svg>
+                <div style="text-align: center;">
+                    <div style="width: 120px; height: 120px; border-radius: 50%; border: 6px solid ${readinessLevel.color}; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;">
+                        <span style="font-size: 2rem; font-weight: 800; color: ${readinessLevel.color};">${results.readinessScore}%</span>
+                    </div>
+                    <span style="font-weight: 600; color: ${readinessLevel.color}; font-size: 1rem;">${readinessLevel.label}</span>
                 </div>
             </div>
         </div>
-        
-        <!-- Quick Snapshot -->
-        <div class="snapshot-section">
-            <h3 class="snapshot-title">Quick Snapshot</h3>
-            <p class="snapshot-subtitle">A closer look at how your internal energy systems are functioning beneath the surface.</p>
-            <div class="snapshot-tags">
-                <span class="snapshot-tag tag-${getStatusLevel(results.indices.BMH).class}">
-                    Body–Mind: ${getStatusLevel(results.indices.BMH).label}
-                </span>
-                <span class="snapshot-tag tag-${getStatusLevel(results.indices.RCI).class}">
-                    Receiving: ${getStatusLevel(results.indices.RCI).label}
-                </span>
-                <span class="snapshot-tag tag-${getStatusLevel(100 - results.indices.OGI).class}">
-                    Over-Giving: ${results.indices.OGI > 60 ? 'High' : results.indices.OGI > 30 ? 'Moderate' : 'Low'}
-                </span>
-            </div>
-            <div class="composite-bars">
-                ${renderCompositeBar('Body–Mind Harmony', results.indices.BMH)}
-                ${renderCompositeBar('Receiving Capacity', results.indices.RCI)}
-                ${renderCompositeBar('Over-Giving Index', results.indices.OGI, true)}
+
+        <!-- Dimension Breakdown Bars -->
+        <div class="dimension-breakdown">
+            <h2 class="section-title">Your Health Dimension Breakdown</h2>
+            <div class="health-bars" style="max-width: 600px; margin: 20px auto;">
+                ${results.allDimensions.map(d => {
+                    const level = getScoreLevel(d.score);
+                    return `
+                    <div style="margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">${d.info.icon} ${d.info.name}</span>
+                            <span style="font-weight: 700; color: ${level.color}; font-size: 0.9rem;">${d.score}% - ${level.label}</span>
+                        </div>
+                        <div style="width: 100%; height: 12px; background: var(--bg-input); border-radius: 6px; overflow: hidden;">
+                            <div class="dim-bar-fill-3" style="width: ${d.score}%; height: 100%; background: ${d.info.color}; border-radius: 6px;"></div>
+                        </div>
+                    </div>
+                `;
+                }).join('')}
+                <!-- Readiness bar -->
+                <div style="margin-bottom: 16px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-subtle);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-primary);">${dimensionInfo.READINESS.icon} ${dimensionInfo.READINESS.name}</span>
+                        <span style="font-weight: 700; color: ${readinessLevel.color}; font-size: 0.9rem;">${results.readinessScore}% - ${readinessLevel.label}</span>
+                    </div>
+                    <div style="width: 100%; height: 12px; background: var(--bg-input); border-radius: 6px; overflow: hidden;">
+                        <div class="dim-bar-fill-3" style="width: ${results.readinessScore}%; height: 100%; background: ${dimensionInfo.READINESS.color}; border-radius: 6px;"></div>
+                    </div>
+                </div>
             </div>
         </div>
-        
-        <!-- Energy Dimensions Grid -->
-        <div class="dimensions-grid-section">
-            <div class="dimension-card">
-                <h3 class="card-title">Your Energy Wheel</h3>
-                <p class="card-subtitle">This radar shows how evenly your energy is distributed across the five core dimensions.</p>
-                <div class="radar-chart">
-                    <canvas id="radarChart"></canvas>
-                </div>
-            </div>
-            <div class="dimension-card">
-                <h3 class="card-title">Dimension Scores</h3>
-                <p class="card-subtitle">Each bar is a 0–100 score based on your answers. Lower scores are where your system is asking for more repair.</p>
-                <div class="dimension-bars">
-                    ${dimensionScores.map(d => renderDimensionBar(d.name, d.score)).join('')}
-                </div>
-                <p class="strongest-note">
-                    Your strongest area is <strong>${strongest.name}</strong>. Continue nurturing this strength — it serves as the foundation that will support healing across other dimensions.
+
+        <!-- Primary Finding / Archetype -->
+        <div class="oto-section" style="background: linear-gradient(135deg, ${results.archetype.color}11, ${results.archetype.color}22); border: 1px solid ${results.archetype.color}33; border-radius: var(--radius-xl); padding: 30px; margin: 30px 0;">
+            <div style="text-align: center; max-width: 700px; margin: 0 auto;">
+                <span style="font-size: 3rem;">${results.archetype.icon}</span>
+                <h2 style="font-family: var(--font-display); font-size: 1.5rem; margin: 10px 0; color: ${results.archetype.color};">${results.archetype.name}</h2>
+                <p style="color: var(--text-secondary); font-size: 1rem; line-height: 1.7;">
+                    ${results.archetype.description}
+                </p>
+                <p style="font-weight: 700; margin-top: 16px; color: ${results.archetype.color}; font-size: 1.1rem;">
+                    The secret you need most: ${results.archetype.secret}
                 </p>
             </div>
         </div>
-        
-        <!-- Leaks Section -->
-        <div class="leaks-section">
-            <p class="leaks-text">
-                The areas requiring your most immediate attention are <strong>${weakest[0].name}</strong> and <strong>${weakest[1].name}</strong>. 
-                These are where focused care and intention will yield the most meaningful results.
-            </p>
-        </div>
-        
-        <!-- Core Energy Pattern -->
-        <div class="pattern-section">
-            <div class="section-badge">
-                <span class="badge-dot"></span>
-                WHAT'S REALLY GOING ON
-            </div>
-            <h3 class="pattern-title">Your Core Energy Pattern</h3>
-            <p class="pattern-narrative">${corePattern.narrative}</p>
-            
-            <h4 class="pattern-subtitle">How this shows up in daily life</h4>
-            <ul class="pattern-list">
-                ${corePattern.behaviors.map(b => `<li>${b}</li>`).join('')}
-            </ul>
-        </div>
-        
-        <!-- Root Cause -->
-        <div class="root-section">
-            <h4 class="root-title">Root cause in energetic terms</h4>
-            <p class="root-text">${corePattern.rootCause}</p>
-        </div>
-        
-        <!-- 7-Day Reset -->
-        <div class="reset-section">
-            <div class="section-badge">
-                <span class="badge-dot"></span>
-                YOUR NEXT 7 DAYS
-            </div>
-            <h3 class="reset-title">7-Day Nervous System Reset</h3>
-            <p class="reset-subtitle">
-                This structured 7-day programme is designed to help you translate awareness into consistent action — 
-                gentle, repeatable practices your system can rely upon, even during life's most demanding moments.
-            </p>
-            <div class="reset-days">
-                ${resetPlan.map((day, i) => `
-                    <div class="reset-day">
-                        <span class="day-dot day-${day.category.toLowerCase()}"></span>
-                        <div class="day-content">
-                            <span class="day-label">DAY ${i + 1}</span>
-                            <p class="day-practice"><strong>${day.category}:</strong> ${day.practice}</p>
-                        </div>
+
+        <!-- Top 3 Concerns -->
+        <div class="dimension-breakdown" style="margin: 30px 0;">
+            <h2 class="section-title">Your Top 3 Areas of Concern</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 20px;">
+                ${results.topConcerns.map((concern, index) => `
+                    <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px; text-align: center; border: 1px solid var(--border-subtle); box-shadow: var(--shadow-soft);">
+                        <div style="font-size: 2rem; margin-bottom: 8px;">${concern.info.icon}</div>
+                        <div style="font-weight: 700; color: var(--text-primary); font-size: 1rem;">#${index + 1} ${concern.info.name}</div>
+                        <div style="font-weight: 800; color: ${concern.info.color}; font-size: 1.5rem; margin-top: 8px;">${concern.score}%</div>
                     </div>
                 `).join('')}
             </div>
         </div>
-        
-        <!-- Note from Ritu -->
-        <div class="note-from-ritu">
-            <div class="ritu-avatar">R</div>
-            <div class="ritu-content">
-                <span class="ritu-label">A Personal Note from Ritu</span>
-                <p class="ritu-message">
-                    I understand what it means to carry the weight of being the dependable one — while quietly struggling within. This report is not a judgement; it is a compassionate guide showing you precisely where your energy is calling for gentleness, firmer boundaries, and genuine support. Take even one meaningful step from this report today, and you will already be on the path to a more balanced, fulfilling life.
-                </p>
-                <p class="ritu-signature">With love, Ritu</p>
+
+        <!-- 4 Secrets Teaser -->
+        <div class="roadmap-section" style="margin: 40px 0;">
+            <h2 class="section-title">The 4 Secrets You Need to Come Out of Lifestyle Diseases</h2>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 24px;">
+                In the 3-hour workshop, Vishal will reveal these powerful secrets tailored to people with your exact profile:
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+                <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px; border-left: 4px solid #e74c3c; box-shadow: var(--shadow-soft);">
+                    <div style="font-weight: 700; color: #e74c3c; margin-bottom: 8px;">\u{1F9E0} Secret #1</div>
+                    <div style="font-weight: 600; color: var(--text-primary);">Neuroscience of Brain Healing</div>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 6px;">Learn the signaling language of your brain. Understand the signs & symptoms before a big problem comes.</p>
+                </div>
+                <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px; border-left: 4px solid #ff9800; box-shadow: var(--shadow-soft);">
+                    <div style="font-weight: 700; color: #ff9800; margin-bottom: 8px;">\u{1F3C3} Secret #2</div>
+                    <div style="font-weight: 600; color: var(--text-primary);">Simplified Human Anatomy</div>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 6px;">Your body needs simplicity. Learn what you can do from home to restore your natural energy and rhythm.</p>
+                </div>
+                <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px; border-left: 4px solid #2196f3; box-shadow: var(--shadow-soft);">
+                    <div style="font-weight: 700; color: #2196f3; margin-bottom: 8px;">\u{1F48A} Secret #3</div>
+                    <div style="font-weight: 600; color: var(--text-primary);">Preventing Medication Errors</div>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 6px;">The side effects of medications and supplements are rising every day. Learn how to protect yourself.</p>
+                </div>
+                <div style="background: var(--bg-card); border-radius: var(--radius-lg); padding: 20px; border-left: 4px solid #9c27b0; box-shadow: var(--shadow-soft);">
+                    <div style="font-weight: 700; color: #9c27b0; margin-bottom: 8px;">\u{1F4A1} Secret #4</div>
+                    <div style="font-weight: 600; color: var(--text-primary);">One-Word Treatment</div>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 6px;">A single approach accepted by Allopathy, Homeopathy, Ayurveda, Unani & Siddha that you can start from day one.</p>
+                </div>
             </div>
         </div>
-        
-        <!-- Disclaimer -->
-        <p class="report-disclaimer">
-            This report is not a medical diagnosis. It is a reflective assessment designed to illuminate where your energy may benefit from thoughtful, sustained support.
-        </p>
-        
-        <!-- OTO Section -->
-        <div class="oto-section">
-            <div class="oto-content">
-                <span class="oto-badge">Special Offer for You</span>
-                <h2 class="oto-title">21-Day Energy Reset Program</h2>
-                <p class="oto-subtitle">${results.archetype.otoMessage}</p>
-                
-                <div class="oto-benefits">
-                    <div class="oto-benefit">
-                        <span class="benefit-icon">🎯</span>
-                        <div class="benefit-text">
-                            <strong>Daily Energy Practices</strong>
-                            5-10 minute rituals designed for busy women
-                        </div>
+
+        <!-- Workshop CTA -->
+        <div class="oto-section diamond-program" style="text-align: center; padding: 40px 20px;">
+            <div style="max-width: 700px; margin: 0 auto;">
+                <span style="display: inline-block; background: var(--accent-mint-dim); color: var(--accent-mint); font-weight: 600; padding: 6px 16px; border-radius: var(--radius-full); font-size: 0.9rem; margin-bottom: 16px;">\u{1F33F} Your Next Step</span>
+                <h2 style="font-family: var(--font-display); font-size: 1.75rem; margin-bottom: 16px; color: var(--text-primary);">Join Vishal's 3-Hour Health Transformation Workshop</h2>
+                <p style="color: var(--text-secondary); font-size: 1rem; line-height: 1.7; margin-bottom: 20px;">
+                    The most saddest thing on planet Earth is living your life with diseases and hoping someday you will be out of it.
+                    Stop hoping. Start acting. This workshop will change the way you look at health forever.
+                </p>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 24px 0; text-align: left;">
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span style="color: var(--accent-mint); font-weight: 700; font-size: 1.2rem;">&#10004;</span>
+                        <span style="font-size: 0.95rem;">Brain Healing Neuroscience</span>
                     </div>
-                    <div class="oto-benefit">
-                        <span class="benefit-icon">🧘</span>
-                        <div class="benefit-text">
-                            <strong>Guided Meditations</strong>
-                            Customized for your energy phase
-                        </div>
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span style="color: var(--accent-mint); font-weight: 700; font-size: 1.2rem;">&#10004;</span>
+                        <span style="font-size: 0.95rem;">Simplified Human Anatomy</span>
                     </div>
-                    <div class="oto-benefit">
-                        <span class="benefit-icon">📱</span>
-                        <div class="benefit-text">
-                            <strong>WhatsApp Community</strong>
-                            Connect with like-minded women
-                        </div>
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span style="color: var(--accent-mint); font-weight: 700; font-size: 1.2rem;">&#10004;</span>
+                        <span style="font-size: 0.95rem;">Medication Error Prevention</span>
                     </div>
-                    <div class="oto-benefit">
-                        <span class="benefit-icon">💫</span>
-                        <div class="benefit-text">
-                            <strong>Energy Tracking Journal</strong>
-                            Monitor your transformation daily
-                        </div>
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                        <span style="color: var(--accent-mint); font-weight: 700; font-size: 1.2rem;">&#10004;</span>
+                        <span style="font-size: 0.95rem;">One-Word Treatment Method</span>
                     </div>
                 </div>
-                
-                <button class="oto-cta" onclick="handleOTOClick()">
-                    <span>Yes! I Want to Reset My Energy</span>
+
+                <p style="font-weight: 700; color: var(--accent-gold); font-size: 1.1rem; margin: 20px 0;">
+                    By Vishal \u2014 India's Leading Naturopath & Nutritionist
+                </p>
+
+                <button class="oto-cta" onclick="window.open('https://example.com/workshop', '_blank')">
+                    <span>Enroll in the Workshop Now</span>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M5 12h14M12 5l7 7-7 7"/>
                     </svg>
                 </button>
-                
-                <p class="oto-guarantee">100% Satisfaction Guarantee | Start transforming today</p>
             </div>
         </div>
-        
-        <!-- Retake Quiz -->
-        <div style="text-align: center; margin-top: var(--space-10);">
-            <button class="btn-secondary" onclick="retakeQuiz()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 4v6h6M23 20v-6h-6"/>
-                    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-                </svg>
-                <span>Retake Quiz</span>
-            </button>
+
+        <div style="text-align: center; margin: 40px 0;">
+            <button class="btn-secondary" onclick="retakeQuiz()">Retake Audit</button>
         </div>
     `;
 
     DOM.resultsContainer.innerHTML = html;
 
-    // Initialize radar chart after DOM is ready
+    // Animate bars after rendering
     setTimeout(() => {
-        initRadarChart(dimensionScores);
-        animateBars();
+        document.querySelectorAll('.dim-bar-fill-3').forEach(bar => {
+            bar.style.transition = 'width 1s ease-out';
+        });
     }, 100);
 }
 
-// Helper functions for report generation
-function getStatusMessage(eas) {
-    if (eas <= 40) {
-        return "YOUR SYSTEM IS CALLING FOR DEEP RESTORATION. GENTLE, CONSISTENT STEPS ARE THE MOST EFFECTIVE PATH FORWARD.";
-    } else if (eas <= 70) {
-        return "YOUR SYSTEM IS IN A MEANINGFUL TRANSITION. STEADY, INTENTIONAL ADJUSTMENTS WILL CREATE LASTING POSITIVE CHANGE.";
-    } else {
-        return "YOUR SYSTEM IS IN A STATE OF FLOW. CONTINUE NURTURING THESE PATTERNS TO SUSTAIN AND DEEPEN YOUR ALIGNMENT.";
-    }
-}
-
-function renderCompositeBar(label, value, isInverse = false) {
-    const displayValue = isInverse ? value : value;
-    const color = isInverse
-        ? (value > 60 ? '#f472b6' : value > 30 ? '#c084fc' : '#22d3ee')
-        : (value > 60 ? '#22d3ee' : value > 30 ? '#c084fc' : '#f472b6');
-
-    return `
-        <div class="composite-bar-item">
-            <span class="composite-label">${label}</span>
-            <div class="composite-track">
-                <div class="composite-fill" data-width="${displayValue}" style="width: 0%; background: ${color}"></div>
-            </div>
-            <span class="composite-value">${displayValue}</span>
-        </div>
-    `;
-}
-
-function renderDimensionBar(name, score) {
-    return `
-        <div class="dim-bar-item">
-            <div class="dim-bar-track">
-                <div class="dim-bar-fill" data-height="${score}%"></div>
-            </div>
-            <span class="dim-bar-label">${name}</span>
-        </div>
-    `;
-}
-
-function generateCorePattern(results, weakest, strongest) {
-    const patterns = {
-        'The Resting Phase': {
-            narrative: `You have been the <span class="highlight">pillar of strength for those around you</span> for so long that your own body and emotions have been quietly bearing the cost.`,
-            behaviors: [
-                'You instinctively take on more than you can manage, even when your body is signalling the need for rest.',
-                'A sense of guilt arises when you consider investing time, resources, or attention in yourself.',
-                'Your sleep quality, energy levels, or overall health feel inconsistent, making it difficult to rely on your own body.',
-                'You are learning to receive more openly, yet when good things begin to grow, an underlying fear of loss can surface.'
-            ],
-            rootCause: `At its core, your system still operates on the belief that safety depends on maintaining control over everything. Until this pattern shifts, your energy reserves will continue to deplete under pressure.`
-        },
-        'The Awakening Phase': {
-            narrative: `You are becoming <span class="highlight">increasingly aware of your patterns</span>, yet the deeply ingrained survival mechanisms still take over during moments of stress.`,
-            behaviors: [
-                'You understand what self-care requires, yet find it challenging to maintain consistency.',
-                'Periods of clarity are interspersed with a return to familiar, less supportive habits.',
-                'You recognise people-pleasing tendencies in yourself, and feel frustrated when they resurface.',
-                'Progress can feel uneven — but each step forward, however small, is building genuine momentum.'
-            ],
-            rootCause: `Your nervous system is in the process of rewiring, and it requires consistent, patient practice to establish trust in change. The sense of instability you feel is, in fact, a natural indicator of meaningful growth.`
-        },
-        'The Rising Phase': {
-            narrative: `You have invested significant effort in your personal development, and your <span class="highlight">energy is steadily building momentum</span>. The foundation is sound — the focus now is on refinement and deepening.`,
-            behaviors: [
-                'You have established boundaries, though maintaining them under pressure can still be a challenge.',
-                'Self-care practices are in place, yet life\'s demands occasionally interrupt your routine.',
-                'You are increasingly discerning about where you direct your energy, though guilt may still arise at times.',
-                'Meaningful transformation feels within reach — the next step is deepening your trust in the process.'
-            ],
-            rootCause: `Your system is learning to sustain a higher level of vitality, though older patterns of fear may occasionally re-emerge. Continue reinforcing the new, healthier neural pathways you have been cultivating.`
-        },
-        'The Radiant Phase': {
-            narrative: `You have cultivated a state of <span class="highlight">deep, authentic alignment</span>, and your energy naturally draws in what you desire. The focus now is on sustaining and expanding this harmony.`,
-            behaviors: [
-                'Self-care has become an integral, non-negotiable part of your daily life.',
-                'You give generously from a place of abundance rather than depletion.',
-                'Your boundaries are clearly defined and upheld with grace and confidence.',
-                'You are positioned to guide and uplift others while preserving your own well-being.'
-            ],
-            rootCause: `Your system has successfully transitioned from survival mode to a creative, generative state. The path ahead is about deepening this alignment and sharing your wisdom with those around you.`
-        }
-    };
-
-    return patterns[results.archetype.name] || patterns['The Awakening Phase'];
-}
-
-function generate7DayReset(archetypeName) {
-    const resets = {
-        'The Resting Phase': [
-            { category: 'BODY', practice: 'Do 3 rounds of 4–7–8 breathing before scrolling or checking messages in the morning.' },
-            { category: 'EMOTIONS', practice: 'Choose one moment daily to gently ask: "What emotion am I running from right now?" and breathe with it for 60 seconds.' },
-            { category: 'MIND', practice: 'Each day, rewrite one limiting thought into an empowering one and speak it out loud three times.' },
-            { category: 'SPIRIT', practice: 'Spend 5 minutes in stillness — no guided meditation, just you and silence.' },
-            { category: 'SUPPORT', practice: 'Ask for one small thing from someone today. Practice receiving without explaining yourself.' },
-            { category: 'BODY', practice: 'Gentle stretching for 10 minutes before bed. Let your body release the day.' },
-            { category: 'INTEGRATION', practice: 'Review your week. What felt different? Journal for 10 minutes on your shifts.' }
-        ],
-        'The Awakening Phase': [
-            { category: 'BODY', practice: 'Morning body scan: 5 minutes to check in with each body part without judgment.' },
-            { category: 'EMOTIONS', practice: 'Name three emotions you felt yesterday. Just name them — no story, no fix.' },
-            { category: 'MIND', practice: 'Catch one thought spiral today and consciously redirect it with a power question.' },
-            { category: 'SPIRIT', practice: '10 minutes of conscious breathing. Focus only on the breath entering and leaving.' },
-            { category: 'SUPPORT', practice: 'Share one vulnerable truth with someone you trust. Notice how it feels.' },
-            { category: 'BODY', practice: 'Move for 20 minutes in any way that feels good — walking, dancing, yoga.' },
-            { category: 'INTEGRATION', practice: 'Celebrate three wins from this week, no matter how small.' }
-        ],
-        'The Rising Phase': [
-            { category: 'BODY', practice: 'Wake up 15 minutes earlier for a morning ritual that\'s just for you.' },
-            { category: 'EMOTIONS', practice: 'Practice feeling joy without waiting for a reason. Generate it from within.' },
-            { category: 'MIND', practice: 'Visualize your ideal day in detail before it begins. Feel it as already done.' },
-            { category: 'SPIRIT', practice: 'Create space for inspired action. When guidance comes, take one small step immediately.' },
-            { category: 'SUPPORT', practice: 'Audit your energy exchanges. Are you giving more than receiving anywhere?' },
-            { category: 'BODY', practice: 'Upgrade one health habit. Better water, food, or sleep — choose one.' },
-            { category: 'INTEGRATION', practice: 'Write a letter to your future self. What do you want her to know?' }
-        ],
-        'The Radiant Phase': [
-            { category: 'BODY', practice: 'Honor your body with its preferred form of movement. Let it guide you.' },
-            { category: 'EMOTIONS', practice: 'Practice transmuting any low emotion into creative energy within 5 minutes.' },
-            { category: 'MIND', practice: 'Mentor someone today. Share one insight that shifted everything for you.' },
-            { category: 'SPIRIT', practice: 'Deep meditation: 20 minutes of complete presence and connection.' },
-            { category: 'SUPPORT', practice: 'Create a new supportive ritual with someone you love.' },
-            { category: 'EXPANSION', practice: 'Dream bigger. What would you do if you knew you couldn\'t fail?' },
-            { category: 'INTEGRATION', practice: 'Anchor your new identity. Who are you becoming? Live from that place.' }
-        ]
-    };
-
-    return resets[archetypeName] || resets['The Awakening Phase'];
-}
-
-function initRadarChart(dimensionScores) {
-    const canvas = document.getElementById('radarChart');
-    if (!canvas) return;
-
-    // Use container width for responsive sizing
-    const container = canvas.parentElement;
-    const containerWidth = container ? container.clientWidth : 500;
-    const size = Math.min(containerWidth - 32, 500);
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-    canvas.style.width = size + 'px';
-    canvas.style.height = size + 'px';
-
-    const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
-
-    const centerX = size / 2;
-    const centerY = size / 2;
-    const radius = (size / 2) - 50;
-    const labels = dimensionScores.map(d => d.name);
-    const values = dimensionScores.map(d => d.score);
-    const numPoints = values.length;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw grid circles
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-    ctx.lineWidth = 1;
-    for (let i = 1; i <= 4; i++) {
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, (radius * i) / 4, 0, Math.PI * 2);
-        ctx.stroke();
-    }
-
-    // Draw grid lines
-    for (let i = 0; i < numPoints; i++) {
-        const angle = (Math.PI * 2 * i) / numPoints - Math.PI / 2;
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.lineTo(
-            centerX + Math.cos(angle) * radius,
-            centerY + Math.sin(angle) * radius
-        );
-        ctx.stroke();
-    }
-
-    // Draw data polygon
-    ctx.fillStyle = 'rgba(192, 132, 252, 0.3)';
-    ctx.strokeStyle = '#c084fc';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-
-    values.forEach((value, i) => {
-        const angle = (Math.PI * 2 * i) / numPoints - Math.PI / 2;
-        const distance = (value / 100) * radius;
-        const x = centerX + Math.cos(angle) * distance;
-        const y = centerY + Math.sin(angle) * distance;
-
-        if (i === 0) {
-            ctx.moveTo(x, y);
-        } else {
-            ctx.lineTo(x, y);
-        }
-    });
-
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    // Draw data points
-    ctx.fillStyle = '#e879f9';
-    values.forEach((value, i) => {
-        const angle = (Math.PI * 2 * i) / numPoints - Math.PI / 2;
-        const distance = (value / 100) * radius;
-        const x = centerX + Math.cos(angle) * distance;
-        const y = centerY + Math.sin(angle) * distance;
-
-        ctx.beginPath();
-        ctx.arc(x, y, 5, 0, Math.PI * 2);
-        ctx.fill();
-    });
-
-    // Draw labels
-    ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
-    ctx.font = '14px Inter, sans-serif';
-    ctx.textAlign = 'center';
-
-    labels.forEach((label, i) => {
-        const angle = (Math.PI * 2 * i) / numPoints - Math.PI / 2;
-        const x = centerX + Math.cos(angle) * (radius + 20);
-        const y = centerY + Math.sin(angle) * (radius + 20);
-        ctx.fillText(label, x, y + 4);
-    });
-}
-
-function animateBars() {
-    // Animate dimension bars (vertical - use height)
-    document.querySelectorAll('.dim-bar-fill').forEach(fill => {
-        const height = fill.getAttribute('data-height'); // data-height contains the percentage
-        setTimeout(() => {
-            fill.style.height = height;
-        }, 100);
-    });
-
-    // Animate composite bars (horizontal - use width)
-    document.querySelectorAll('.composite-fill').forEach(fill => {
-        const targetWidth = fill.getAttribute('data-width'); // data-width contains the numeric value
-        setTimeout(() => {
-            fill.style.width = targetWidth + '%';
-        }, 100);
-    });
-}
-
-// Action Handlers
-function handleOTOClick() {
-    // TODO: Replace this with the actual Stripe/Razorpay payment link
-    const PAYMENT_URL = 'https://buy.stripe.com/test_placeholder';
-    window.open(PAYMENT_URL, '_blank');
-}
-
 function retakeQuiz() {
+    AppState.currentScreen = 'welcome';
     AppState.currentQuestionIndex = 0;
     AppState.answers = {};
-    AppState.results = null;
     showScreen('welcome');
 }
 
