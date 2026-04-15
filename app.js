@@ -1,5 +1,4 @@
 // GoNature Health & Lifestyle Assessment - Main Application Logic
-// One-question-at-a-time premium experience
 
 // App State
 const AppState = {
@@ -22,6 +21,8 @@ const DOM = {
     nextBtn: document.getElementById('next-btn'),
     progressFill: document.getElementById('progress-fill'),
     progressText: document.getElementById('progress-text'),
+    progressSectionIcon: document.getElementById('progress-section-icon'),
+    progressSectionName: document.getElementById('progress-section-name'),
     quizContent: document.getElementById('quiz-content'),
     resultsContainer: document.querySelector('.results-container')
 };
@@ -34,15 +35,25 @@ function init() {
     DOM.nextBtn.addEventListener('click', nextQuestion);
 }
 
-// Flatten all questions from sections into single array
+// Build flat question list with section intro items inserted
 function getAllQuestions() {
     const questions = [];
-    sectionOrder.forEach(sectionKey => {
+    sectionOrder.forEach((sectionKey, sectionNumber) => {
         const section = quizData[sectionKey];
+        // Section intro card before each section's questions
+        questions.push({
+            id: `section-intro-${sectionKey}`,
+            type: 'section-intro',
+            sectionKey,
+            sectionTitle: section.title,
+            sectionIcon: section.icon,
+            sectionSubtitle: section.subtitle,
+            sectionNumber
+        });
         section.questions.forEach(question => {
             questions.push({
                 ...question,
-                sectionKey: sectionKey,
+                sectionKey,
                 sectionTitle: section.title,
                 sectionIcon: section.icon,
                 sectionSubtitle: section.subtitle
@@ -52,11 +63,9 @@ function getAllQuestions() {
     return questions;
 }
 
-// Navigation Functions
+// Screen navigation
 function showScreen(screenName) {
-    Object.values(DOM.screens).forEach(screen => {
-        screen.classList.remove('active');
-    });
+    Object.values(DOM.screens).forEach(s => s.classList.remove('active'));
     DOM.screens[screenName].classList.add('active');
     AppState.currentScreen = screenName;
     window.scrollTo(0, 0);
@@ -77,9 +86,7 @@ function prevQuestion() {
 }
 
 function nextQuestion() {
-    if (!validateCurrentQuestion()) {
-        return;
-    }
+    if (!validateCurrentQuestion()) return;
 
     if (AppState.currentQuestionIndex < AppState.allQuestions.length - 1) {
         AppState.currentQuestionIndex++;
@@ -92,79 +99,130 @@ function nextQuestion() {
 // Validation
 function validateCurrentQuestion() {
     const question = AppState.allQuestions[AppState.currentQuestionIndex];
+    if (question.type === 'section-intro') return true;
+
     const answer = AppState.answers[question.id];
     const questionCard = document.querySelector('.question-card');
 
     if (!answer || (typeof answer === 'string' && answer.trim() === '')) {
         if (questionCard) {
+            questionCard.classList.add('shake');
             questionCard.classList.add('invalid');
-            shakeElement(questionCard);
+            setTimeout(() => questionCard.classList.remove('shake'), 500);
         }
         return false;
     }
 
-    if (questionCard) {
-        questionCard.classList.remove('invalid');
-    }
+    if (questionCard) questionCard.classList.remove('invalid');
     return true;
 }
 
-function shakeElement(element) {
-    element.style.animation = 'shake 0.5s ease';
-    setTimeout(() => {
-        element.style.animation = '';
-    }, 500);
+// Section helpers
+function sectionQuestionCount(sectionKey) {
+    return AppState.allQuestions.filter(q => q.sectionKey === sectionKey && q.type !== 'section-intro').length;
 }
 
-// Add shake animation
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-10px); }
-        75% { transform: translateX(10px); }
+function sectionQuestionIndex(idx) {
+    const q = AppState.allQuestions[idx];
+    let count = 0;
+    for (let i = 0; i <= idx; i++) {
+        const qi = AppState.allQuestions[i];
+        if (qi.sectionKey === q.sectionKey && qi.type !== 'section-intro') count++;
     }
-    .question-card.invalid {
-        border-color: var(--error) !important;
-    }
-`;
-document.head.appendChild(style);
+    return count;
+}
 
-// Render Functions
+// Progress bar update
+function updateProgress() {
+    const totalActual = AppState.allQuestions.filter(q => q.type !== 'section-intro').length;
+    const answeredActual = AppState.allQuestions
+        .slice(0, AppState.currentQuestionIndex)
+        .filter(q => q.type !== 'section-intro').length;
+    const progress = Math.round((answeredActual / totalActual) * 100);
+
+    DOM.progressFill.style.width = `${progress}%`;
+    DOM.progressText.textContent = `${progress}% Complete`;
+
+    const question = AppState.allQuestions[AppState.currentQuestionIndex];
+    if (DOM.progressSectionIcon) DOM.progressSectionIcon.textContent = question.sectionIcon;
+    if (DOM.progressSectionName) DOM.progressSectionName.textContent = question.sectionTitle;
+}
+
+// Navigation buttons update
+function updateNavigation() {
+    const question = AppState.allQuestions[AppState.currentQuestionIndex];
+    const isLastItem = AppState.currentQuestionIndex === AppState.allQuestions.length - 1;
+    const isFirstItem = AppState.currentQuestionIndex === 0;
+
+    if (isFirstItem) {
+        DOM.prevBtn.style.display = 'none';
+    } else {
+        DOM.prevBtn.style.display = '';
+        DOM.prevBtn.disabled = false;
+    }
+
+    if (question.type === 'section-intro') {
+        DOM.nextBtn.textContent = "Let's Begin \u2192";
+    } else if (isLastItem) {
+        DOM.nextBtn.textContent = 'See My Results \u279C';
+    } else {
+        DOM.nextBtn.textContent = 'Next \u2192';
+    }
+}
+
+// Section intro rendering
+function renderSectionIntro(question, direction = 'none') {
+    const sectionIndex = sectionOrder.indexOf(question.sectionKey);
+    let animClass = 'fade-in';
+    if (direction === 'next') animClass = 'slide-in-right';
+    if (direction === 'prev') animClass = 'slide-in-left';
+
+    DOM.quizContent.innerHTML = `
+        <div class="section-intro-card ${animClass}">
+            <span class="section-intro-icon">${question.sectionIcon}</span>
+            <span class="section-intro-badge">Section ${sectionIndex + 1}</span>
+            <h2 class="section-intro-title">${question.sectionTitle}</h2>
+            <p class="section-intro-subtitle">${question.sectionSubtitle}</p>
+        </div>
+    `;
+    window.scrollTo(0, 0);
+}
+
+// Main render function
 function renderQuestion(direction = 'none') {
     const question = AppState.allQuestions[AppState.currentQuestionIndex];
-    const questionNumber = AppState.currentQuestionIndex + 1;
 
     updateProgress();
     updateNavigation();
 
-    let animationClass = 'fade-in';
-    if (direction === 'next') animationClass = 'slide-in-right';
-    if (direction === 'prev') animationClass = 'slide-in-left';
+    if (question.type === 'section-intro') {
+        renderSectionIntro(question, direction);
+        return;
+    }
 
-    const html = `
-        <div class="question-wrapper ${animationClass}">
-            <div class="section-indicator">
-                <span class="section-icon">${question.sectionIcon}</span>
-                <span class="section-name">${question.sectionTitle}</span>
-            </div>
-            <div class="question-card" data-question-id="${question.id}">
-                <p class="question-text">
-                    <span class="question-number">${questionNumber}.</span>
-                    ${question.text}
-                </p>
-                ${renderQuestionInput(question)}
-            </div>
+    let animClass = 'fade-in';
+    if (direction === 'next') animClass = 'slide-in-right';
+    if (direction === 'prev') animClass = 'slide-in-left';
+
+    const secQ = sectionQuestionIndex(AppState.currentQuestionIndex);
+    const secTotal = sectionQuestionCount(question.sectionKey);
+
+    DOM.quizContent.innerHTML = `
+        <div class="question-card ${animClass}" id="questionCard" data-question-id="${question.id}">
+            <div class="question-number">Question ${secQ} of ${secTotal}</div>
+            <h2 class="question-text">${question.text}</h2>
+            ${renderQuestionInput(question)}
         </div>
     `;
 
-    DOM.quizContent.innerHTML = html;
     attachQuestionListeners(question);
     window.scrollTo(0, 0);
 }
 
+// Input rendering
 function renderQuestionInput(question) {
     const currentAnswer = AppState.answers[question.id];
+    const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
 
     switch (question.type) {
         case 'text':
@@ -172,21 +230,22 @@ function renderQuestionInput(question) {
                 <input type="text"
                     class="text-input"
                     id="${question.id}"
-                    placeholder="${question.placeholder || ''}"
-                    value="${currentAnswer || ''}">
+                    placeholder="${question.placeholder || 'Type your answer...'}"
+                    value="${currentAnswer || ''}"
+                    autocomplete="off">
             `;
 
         case 'single':
         case 'categorical':
         case 'scored':
             return `
-                <div class="options-grid">
-                    ${question.options.map(opt => `
-                        <label class="option-label ${currentAnswer === opt.value ? 'selected' : ''}" data-value="${opt.value}">
-                            <input type="radio" class="option-radio" name="${question.id}" value="${opt.value}" ${currentAnswer === opt.value ? 'checked' : ''}>
-                            <span class="option-indicator"></span>
+                <div class="options-list">
+                    ${question.options.map((opt, i) => `
+                        <div class="option-card ${currentAnswer === opt.value ? 'selected' : ''}" data-value="${opt.value}">
+                            <span class="option-letter">${letters[i] !== undefined ? letters[i] : i + 1}</span>
                             <span class="option-text">${opt.label}</span>
-                        </label>
+                            <span class="option-check">&#10003;</span>
+                        </div>
                     `).join('')}
                 </div>
             `;
@@ -198,16 +257,12 @@ function renderQuestionInput(question) {
                     <span class="scale-label scale-label-left">Disagree</span>
                     <div class="scale-circles">
                         ${[1, 2, 3, 4, 5].map(val => {
-                const sizeClass = val === 1 || val === 5 ? 'size-lg' :
-                    val === 2 || val === 4 ? 'size-md' : 'size-sm';
-                const colorClass = val <= 2 ? 'color-disagree' :
-                    val >= 4 ? 'color-agree' : 'color-neutral';
-                return `
-                                <div class="scale-circle ${sizeClass} ${colorClass} ${selectedValue === val ? 'selected' : ''}"
-                                     data-value="${val}">
-                                </div>
-                            `;
-            }).join('')}
+                            const sizeClass = val === 1 || val === 5 ? 'size-lg' :
+                                val === 2 || val === 4 ? 'size-md' : 'size-sm';
+                            const colorClass = val <= 2 ? 'color-disagree' :
+                                val >= 4 ? 'color-agree' : 'color-neutral';
+                            return `<div class="scale-circle ${sizeClass} ${colorClass} ${selectedValue === val ? 'selected' : ''}" data-value="${val}"></div>`;
+                        }).join('')}
                     </div>
                     <span class="scale-label scale-label-right">Agree</span>
                 </div>
@@ -218,6 +273,7 @@ function renderQuestionInput(question) {
     }
 }
 
+// Event listeners for question interactions
 function attachQuestionListeners(question) {
     const textInput = document.querySelector('.text-input');
     if (textInput) {
@@ -225,44 +281,35 @@ function attachQuestionListeners(question) {
             AppState.answers[e.target.id] = e.target.value;
             removeInvalidState();
         });
-        textInput.focus();
+        textInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.value.trim()) nextQuestion();
+        });
+        setTimeout(() => textInput.focus(), 200);
     }
 
-    document.querySelectorAll('.option-label').forEach(label => {
-        label.addEventListener('click', (e) => {
-            const radio = label.querySelector('.option-radio');
-            const questionId = radio.name;
-            const value = radio.value;
+    document.querySelectorAll('.option-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const value = card.dataset.value;
+            AppState.answers[question.id] = value;
 
-            AppState.answers[questionId] = value;
-
-            const siblings = label.parentElement.querySelectorAll('.option-label');
-            siblings.forEach(sib => sib.classList.remove('selected'));
-            label.classList.add('selected');
+            card.closest('.options-list').querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
 
             removeInvalidState();
-
-            setTimeout(() => {
-                nextQuestion();
-            }, 600);
+            setTimeout(() => nextQuestion(), 500);
         });
     });
 
     const scaleCircles = document.querySelectorAll('.scale-circle');
-    if (scaleCircles.length > 0) {
-        scaleCircles.forEach(circle => {
-            circle.addEventListener('click', () => {
-                const value = circle.dataset.value;
-                AppState.answers[question.id] = value;
-                scaleCircles.forEach(c => c.classList.remove('selected'));
-                circle.classList.add('selected');
-                removeInvalidState();
-                setTimeout(() => {
-                    nextQuestion();
-                }, 600);
-            });
+    scaleCircles.forEach(circle => {
+        circle.addEventListener('click', () => {
+            AppState.answers[question.id] = circle.dataset.value;
+            scaleCircles.forEach(c => c.classList.remove('selected'));
+            circle.classList.add('selected');
+            removeInvalidState();
+            setTimeout(() => nextQuestion(), 500);
         });
-    }
+    });
 }
 
 function removeInvalidState() {
@@ -270,29 +317,9 @@ function removeInvalidState() {
     if (card) card.classList.remove('invalid');
 }
 
-function updateProgress() {
-    const totalQuestions = AppState.allQuestions.length;
-    const progress = ((AppState.currentQuestionIndex + 1) / totalQuestions) * 100;
-    DOM.progressFill.style.width = `${progress}%`;
-    DOM.progressText.textContent = `Question ${AppState.currentQuestionIndex + 1} of ${totalQuestions}`;
-}
-
-function updateNavigation() {
-    DOM.prevBtn.disabled = AppState.currentQuestionIndex === 0;
-
-    const isLastQuestion = AppState.currentQuestionIndex === AppState.allQuestions.length - 1;
-    DOM.nextBtn.innerHTML = isLastQuestion
-        ? `<span>See My Results</span>
-           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-               <path d="M5 12h14M12 5l7 7-7 7"/>
-           </svg>`
-        : `<span>Next</span>
-           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-               <path d="M5 12h14M12 5l7 7-7 7"/>
-           </svg>`;
-}
-
+// ============================
 // Results Functions
+// ============================
 function calculateAndShowResults() {
     AppState.results = ScoringEngine.calculateResults(AppState.answers);
     showScreen('results');
@@ -557,7 +584,6 @@ function renderResults() {
 
     DOM.resultsContainer.innerHTML = html;
 
-    // Animate after render
     setTimeout(() => {
         renderDonutChart(results.overallScore, results.phaseColor);
         renderRadarChart(results);
@@ -592,7 +618,6 @@ function renderDonutChart(score, color) {
         </svg>
     `;
 
-    // Animate the ring
     setTimeout(() => {
         const progressCircle = container.querySelector('.donut-progress');
         if (progressCircle) {
@@ -613,10 +638,10 @@ function renderRadarChart(results) {
     new Chart(ctx, {
         type: 'radar',
         data: {
-            labels: labels,
+            labels,
             datasets: [{
                 label: 'Your Score',
-                data: data,
+                data,
                 backgroundColor: 'rgba(77, 184, 154, 0.2)',
                 borderColor: 'rgba(77, 184, 154, 0.8)',
                 borderWidth: 2,
@@ -629,29 +654,16 @@ function renderRadarChart(results) {
         options: {
             responsive: true,
             maintainAspectRatio: true,
-            plugins: {
-                legend: { display: false }
-            },
+            plugins: { legend: { display: false } },
             scales: {
                 r: {
                     beginAtZero: true,
                     max: 100,
-                    ticks: {
-                        stepSize: 25,
-                        display: false
-                    },
-                    grid: {
-                        color: 'rgba(0,0,0,0.06)'
-                    },
-                    angleLines: {
-                        color: 'rgba(0,0,0,0.06)'
-                    },
+                    ticks: { stepSize: 25, display: false },
+                    grid: { color: 'rgba(0,0,0,0.06)' },
+                    angleLines: { color: 'rgba(0,0,0,0.06)' },
                     pointLabels: {
-                        font: {
-                            family: "'Inter', sans-serif",
-                            size: 11,
-                            weight: '500'
-                        },
+                        font: { family: "'Inter', sans-serif", size: 11, weight: '500' },
                         color: '#475569'
                     }
                 }
@@ -661,7 +673,6 @@ function renderRadarChart(results) {
 }
 
 function animateBars() {
-    // Animate snapshot bars
     document.querySelectorAll('.bar-fill-animate').forEach(bar => {
         const targetWidth = bar.style.getPropertyValue('--target-width');
         setTimeout(() => {
@@ -670,7 +681,6 @@ function animateBars() {
         }, 100);
     });
 
-    // Animate pill bars
     document.querySelectorAll('.pill-fill-animate').forEach(bar => {
         const targetHeight = bar.style.getPropertyValue('--target-height');
         setTimeout(() => {

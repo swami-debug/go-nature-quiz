@@ -43,23 +43,23 @@ const ScoringEngine = {
             }
         });
 
-        // All dimension keys except SELF_AWARENESS (used as readiness)
-        const healthDimensions = ['HYDRATION', 'FOOD', 'SLEEP', 'ACTIVITY', 'STRESS', 'NATURAL', 'AWARENESS'];
+        // All 8 health dimensions
+        const healthDimensions = ['DAILY_ROUTINE', 'DIET', 'GUT_HEALTH', 'BREATHING', 'WEIGHT', 'MEDICATION', 'MIND', 'MINDSET'];
         const healthScores = healthDimensions.map(d => dimensions[d] || 0);
         const overallScore = Math.round(healthScores.reduce((a, b) => a + b, 0) / healthScores.length);
 
-        // Readiness/Self Awareness score
-        const readinessScore = dimensions['SELF_AWARENESS'] || 0;
+        // Readiness score (Mindset & Awareness)
+        const readinessScore = dimensions['MINDSET'] || 0;
 
         // Composite scores for Quick Snapshot
         const physicalHealth = Math.round(
-            ((dimensions.HYDRATION || 0) + (dimensions.FOOD || 0) + (dimensions.SLEEP || 0) + (dimensions.ACTIVITY || 0)) / 4
+            ((dimensions.DAILY_ROUTINE || 0) + (dimensions.DIET || 0) + (dimensions.GUT_HEALTH || 0) + (dimensions.BREATHING || 0) + (dimensions.WEIGHT || 0)) / 5
         );
         const mentalWellness = Math.round(
-            ((dimensions.STRESS || 0) + (dimensions.AWARENESS || 0)) / 2
+            ((dimensions.MIND || 0) + (dimensions.MINDSET || 0)) / 2
         );
         const naturalAlignment = Math.round(
-            ((dimensions.NATURAL || 0) + (dimensions.SELF_AWARENESS || 0)) / 2
+            ((dimensions.GUT_HEALTH || 0) + (dimensions.MEDICATION || 0) + (dimensions.MINDSET || 0)) / 3
         );
 
         // Sort health dimensions by score (lowest first = needs most attention)
@@ -68,7 +68,7 @@ const ScoringEngine = {
             .sort((a, b) => a.score - b.score);
 
         // All dimensions for radar chart
-        const allDimensionsList = [...healthDimensions, 'SELF_AWARENESS']
+        const allDimensionsList = healthDimensions
             .map(d => ({ key: d, score: dimensions[d] || 0, info: dimensionInfo[d] }));
 
         // Top concerns (lowest scoring)
@@ -121,51 +121,56 @@ const ScoringEngine = {
 
     generate7DayPlan(topConcerns, strongestAreas) {
         const planItems = {
-            HYDRATION: {
-                label: 'HYDRATION',
-                color: '#3b82f6',
-                task: 'Start your morning with a glass of warm water before anything else. Carry a water bottle and aim for 8 glasses today.'
+            DAILY_ROUTINE: {
+                label: 'SLEEP RESET',
+                color: '#8b5cf6',
+                task: 'Set a bedtime alarm for 10:30 PM. Switch off all screens 1 hour before bed. Wake up at a fixed time and step outside for 10 minutes of morning sunlight.'
             },
-            FOOD: {
+            DIET: {
                 label: 'NUTRITION',
                 color: '#ef4444',
-                task: 'Add one fresh fruit and one serving of vegetables to your meals today. Eat slowly and without distractions.'
+                task: 'Start with 2.5 litres of water today. Add one fresh fruit and one serving of vegetables to your meals. Eat at fixed times and avoid outside food.'
             },
-            SLEEP: {
-                label: 'SLEEP',
-                color: '#8b5cf6',
-                task: 'Set a bedtime alarm for 10 PM. Put your phone away 30 minutes before bed and practice 5 minutes of deep breathing.'
+            GUT_HEALTH: {
+                label: 'GUT HEALING',
+                color: '#22c55e',
+                task: 'Begin your morning with warm water on an empty stomach. Eat slowly and chew well. Avoid dairy and processed foods for the day.'
             },
-            ACTIVITY: {
-                label: 'MOVEMENT',
+            BREATHING: {
+                label: 'BREATH & MOVEMENT',
                 color: '#f97316',
-                task: 'Take a 20-minute walk in nature. Stretch your body for 5 minutes in the morning. Move every hour.'
+                task: 'Practice 10 minutes of deep belly breathing or pranayama in the morning. Take a 20-minute walk. Set a reminder to stand and stretch every hour.'
             },
-            STRESS: {
+            WEIGHT: {
+                label: 'BODY BALANCE',
+                color: '#14b8a6',
+                task: 'Eat your last meal before 7:30 PM. Avoid refined sugar and packaged snacks today. Take a gentle 30-minute walk after dinner.'
+            },
+            MEDICATION: {
+                label: 'NATURAL HEALING',
+                color: '#3b82f6',
+                task: 'Research one natural lifestyle change relevant to your condition. Discuss with your doctor the possibility of gradual reduction. Avoid self-medicating today.'
+            },
+            MIND: {
                 label: 'MENTAL PEACE',
                 color: '#ec4899',
-                task: 'Practice 5 minutes of meditation or deep breathing. Take a short break every hour during work.'
+                task: 'Practice 10 minutes of meditation or slow breathing. Journal for 5 minutes about what is on your mind. Spend 30 minutes away from all screens.'
             },
-            NATURAL: {
-                label: 'NATURE',
-                color: '#22c55e',
-                task: 'Spend 15 minutes in direct sunlight. Try walking barefoot on grass. Replace one processed item with a natural alternative.'
-            },
-            AWARENESS: {
+            MINDSET: {
                 label: 'AWARENESS',
-                color: '#14b8a6',
-                task: 'Spend 30 minutes without any screen. Do one activity that makes you genuinely laugh or smile.'
+                color: '#eab308',
+                task: 'Read or watch one piece of content on natural health today. Observe one body signal (energy, digestion, mood) and note it down.'
             }
         };
 
         const days = [
-            { day: 1, ...planItems[topConcerns[0]?.key] || planItems.HYDRATION },
-            { day: 2, ...planItems[topConcerns[1]?.key] || planItems.FOOD },
-            { day: 3, ...planItems[topConcerns[2]?.key] || planItems.SLEEP },
-            { day: 4, ...planItems.ACTIVITY },
-            { day: 5, ...planItems.NATURAL },
-            { day: 6, ...planItems.STRESS },
-            { day: 7, label: 'INTEGRATION', color: '#22c55e', task: 'Review your week. What felt different? Journal for 10 minutes about the changes you noticed in your body and mind.' }
+            { day: 1, ...(planItems[topConcerns[0]?.key] || planItems.DAILY_ROUTINE) },
+            { day: 2, ...(planItems[topConcerns[1]?.key] || planItems.DIET) },
+            { day: 3, ...(planItems[topConcerns[2]?.key] || planItems.GUT_HEALTH) },
+            { day: 4, ...planItems.BREATHING },
+            { day: 5, ...planItems.MIND },
+            { day: 6, ...planItems.MINDSET },
+            { day: 7, label: 'INTEGRATION', color: '#22c55e', task: 'Review your week. What felt different? Journal for 10 minutes about the changes you noticed in your body and mind. Commit to one habit you will carry forward.' }
         ];
 
         return days;

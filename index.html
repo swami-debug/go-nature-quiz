@@ -74,7 +74,13 @@
                     <div class="progress-bar">
                         <div id="progress-fill" class="progress-fill"></div>
                     </div>
-                    <span id="progress-text" class="progress-text">Question 1 of 49</span>
+                    <div class="progress-info">
+                        <span class="progress-section" id="progress-section">
+                            <span id="progress-section-icon"></span>
+                            <span id="progress-section-name"></span>
+                        </span>
+                        <span id="progress-text" class="progress-text">0% Complete</span>
+                    </div>
                 </div>
 
                 <div id="quiz-content" class="quiz-content">
@@ -82,20 +88,8 @@
                 </div>
 
                 <div class="quiz-navigation">
-                    <button id="prev-btn" class="btn-secondary" disabled>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M19 12H5M12 19l-7-7 7-7" />
-                        </svg>
-                        <span>Back</span>
-                    </button>
-                    <button id="next-btn" class="btn-primary">
-                        <span>Next</span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M5 12h14M12 5l7 7-7 7" />
-                        </svg>
-                    </button>
+                    <button id="prev-btn" class="btn-secondary">&#8592; Back</button>
+                    <button id="next-btn" class="btn-primary">Next &#8594;</button>
                 </div>
             </div>
         </section>
