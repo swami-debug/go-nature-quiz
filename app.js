@@ -327,14 +327,14 @@ function calculateAndShowResults() {
 }
 
 function getScoreLevel(score) {
-    if (score >= 75) return { label: 'Excellent', color: '#22c55e' };
+    if (score >= 75) return { label: 'Excellent', color: '#4ade80' };
     if (score >= 50) return { label: 'Good', color: '#f97316' };
     if (score >= 25) return { label: 'Needs Attention', color: '#ef4444' };
     return { label: 'Critical', color: '#dc2626' };
 }
 
 function getSnapshotLabel(score) {
-    if (score >= 75) return { label: 'Strong', color: '#22c55e' };
+    if (score >= 75) return { label: 'Strong', color: '#4ade80' };
     if (score >= 50) return { label: 'Transitioning', color: '#3b82f6' };
     return { label: 'Needs Focus', color: '#ef4444' };
 }
@@ -418,7 +418,7 @@ function renderResults() {
                 <div class="snapshot-bar-row">
                     <span class="bar-label">Natural Alignment</span>
                     <div class="bar-track">
-                        <div class="bar-fill bar-fill-animate" style="width: 0%; --target-width: ${results.naturalAlignment}%; background: linear-gradient(90deg, #22c55e, #14b8a6);"></div>
+                        <div class="bar-fill bar-fill-animate" style="width: 0%; --target-width: ${results.naturalAlignment}%; background: linear-gradient(90deg, #4ade80, #14b8a6);"></div>
                     </div>
                     <span class="bar-value">${results.naturalAlignment}</span>
                 </div>
@@ -455,7 +455,7 @@ function renderResults() {
                 }).join('')}
             </div>
             <div class="dimension-insight">
-                <p>Your strongest area is <strong style="color: ${results.strongestAreas[0]?.info?.color || '#22c55e'};">${results.strongestAreas[0]?.info?.name || 'Self Awareness'}</strong>.
+                <p>Your strongest area is <strong style="color: ${results.strongestAreas[0]?.info?.color || '#4ade80'};">${results.strongestAreas[0]?.info?.name || 'Self Awareness'}</strong>.
                 Continue nurturing this strength \u2014 it serves as the foundation that will support improvement across other dimensions.</p>
             </div>
         </div>

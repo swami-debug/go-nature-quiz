@@ -90,7 +90,7 @@ const ScoringEngine = {
         } else {
             phase = 'THE THRIVING PHASE';
             phaseDescription = 'Excellent! Your lifestyle habits are well-aligned with natural health principles. Continue nurturing what\u2019s working and fine-tune the smaller areas. You\u2019re an inspiration for others on their health journey.';
-            phaseColor = '#22c55e';
+            phaseColor = '#4ade80';
         }
 
         // Generate 7-day plan based on weakest areas
