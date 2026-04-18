@@ -1,7 +1,7 @@
 // ─── GoHighLevel webhook ─────────────────────────────────────────
 // Paste your GHL Inbound Webhook URL here (from Workflow trigger).
 // While this is empty, quiz data will NOT be sent anywhere.
-const GHL_WEBHOOK_URL = '';
+const GHL_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/n7FpbtADGMn4XoZwzZeG/webhook-trigger/497773ad-1870-4a14-aecf-409151c2d35c';
 // ─────────────────────────────────────────────────────────────────
 
 const app = {
