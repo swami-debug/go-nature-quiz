@@ -1088,8 +1088,22 @@ body {
 
 /* Radar chart wrapper */
 .radar-wrapper {
-    max-width: 360px;
-    margin: 0 auto;
+    max-width: 520px;
+    width: 100%;
+    margin: 1rem auto 0;
+    padding: 0 1rem;
+}
+
+.radar-wrapper canvas {
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1;
+}
+
+@media (max-width: 480px) {
+    .radar-wrapper {
+        padding: 0;
+    }
 }
 
 /* ===== RESPONSIVE ===== */

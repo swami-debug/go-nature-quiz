@@ -457,15 +457,18 @@ const app = {
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 1,
+                layout: { padding: 24 },
                 plugins: { legend: { display: false } },
                 scales: {
                     r: {
                         suggestedMin: 0,
                         suggestedMax: 100,
-                        ticks: { stepSize: 25, color: '#94a3b8', backdropColor: 'transparent', font: { size: 10 } },
+                        ticks: { stepSize: 25, color: '#94a3b8', backdropColor: 'transparent', font: { size: 11 } },
                         grid: { color: '#e8e4de' },
                         angleLines: { color: '#e8e4de' },
-                        pointLabels: { color: '#475569', font: { size: 10, weight: '600' } }
+                        pointLabels: { color: '#475569', font: { size: 12, weight: '600' } }
                     }
                 }
             }
