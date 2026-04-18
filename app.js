@@ -1,701 +1,485 @@
-// GoNature Health & Lifestyle Assessment - Main Application Logic
-
-// App State
-const AppState = {
+const app = {
     currentScreen: 'welcome',
-    currentQuestionIndex: 0,
-    allQuestions: [],
+    currentStepIndex: 0,
+    allSteps: [],
     answers: {},
-    results: null
-};
+    results: null,
+    direction: 'right',
 
-// DOM Elements
-const DOM = {
-    screens: {
-        welcome: document.getElementById('welcome-screen'),
-        quiz: document.getElementById('quiz-screen'),
-        results: document.getElementById('results-screen')
+    init() {
+        this.allSteps = this.buildSteps();
     },
-    startBtn: document.getElementById('start-quiz'),
-    prevBtn: document.getElementById('prev-btn'),
-    nextBtn: document.getElementById('next-btn'),
-    progressFill: document.getElementById('progress-fill'),
-    progressText: document.getElementById('progress-text'),
-    progressSectionIcon: document.getElementById('progress-section-icon'),
-    progressSectionName: document.getElementById('progress-section-name'),
-    quizContent: document.getElementById('quiz-content'),
-    resultsContainer: document.querySelector('.results-container')
-};
 
-// Initialize App
-function init() {
-    AppState.allQuestions = getAllQuestions();
-    DOM.startBtn.addEventListener('click', startQuiz);
-    DOM.prevBtn.addEventListener('click', prevQuestion);
-    DOM.nextBtn.addEventListener('click', nextQuestion);
-}
+    buildSteps() {
+        const steps = [];
+        const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+        const totalQuestions = sectionOrder.reduce((sum, key) => sum + quizData[key].questions.length, 0);
+        let overallQuestionNumber = 0;
 
-// Build flat question list with section intro items inserted
-function getAllQuestions() {
-    const questions = [];
-    sectionOrder.forEach((sectionKey, sectionNumber) => {
-        const section = quizData[sectionKey];
-        // Section intro card before each section's questions
-        questions.push({
-            id: `section-intro-${sectionKey}`,
-            type: 'section-intro',
-            sectionKey,
-            sectionTitle: section.title,
-            sectionIcon: section.icon,
-            sectionSubtitle: section.subtitle,
-            sectionNumber
-        });
-        section.questions.forEach(question => {
-            questions.push({
-                ...question,
-                sectionKey,
-                sectionTitle: section.title,
-                sectionIcon: section.icon,
-                sectionSubtitle: section.subtitle
+        sectionOrder.forEach(sectionKey => {
+            const section = quizData[sectionKey];
+            const sectionTotalQuestions = section.questions.length;
+            let sectionQuestionNumber = 0;
+
+            section.questions.forEach(q => {
+                overallQuestionNumber++;
+                sectionQuestionNumber++;
+
+                let options = null;
+                if (q.options) {
+                    options = q.options.map((opt, idx) => ({
+                        value: opt.value,
+                        score: opt.score,
+                        letter: labels[idx],
+                        text: opt.text || opt.label
+                    }));
+                }
+
+                steps.push({
+                    stepType: 'question',
+                    qType: q.type === 'text' ? 'text' : 'single',
+                    id: q.id,
+                    text: q.text,
+                    options,
+                    placeholder: q.placeholder || null,
+                    sectionKey,
+                    sectionTitle: section.title,
+                    sectionIcon: section.icon,
+                    overallQuestionNumber,
+                    totalQuestions,
+                    sectionQuestionNumber,
+                    sectionTotalQuestions
+                });
             });
         });
-    });
-    return questions;
-}
+        return steps;
+    },
 
-// Screen navigation
-function showScreen(screenName) {
-    Object.values(DOM.screens).forEach(s => s.classList.remove('active'));
-    DOM.screens[screenName].classList.add('active');
-    AppState.currentScreen = screenName;
-    window.scrollTo(0, 0);
-}
+    start() {
+        this.showScreen('quiz');
+        this.renderStep();
+    },
 
-function startQuiz() {
-    AppState.currentQuestionIndex = 0;
-    AppState.answers = {};
-    showScreen('quiz');
-    renderQuestion();
-}
+    showScreen(name) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('screen-' + name).classList.add('active');
+        this.currentScreen = name;
+        window.scrollTo(0, 0);
+    },
 
-function prevQuestion() {
-    if (AppState.currentQuestionIndex > 0) {
-        AppState.currentQuestionIndex--;
-        renderQuestion('prev');
-    }
-}
+    updateProgress(step) {
+        const pct = Math.round((step.overallQuestionNumber / step.totalQuestions) * 100);
+        document.getElementById('progressFill').style.width = pct + '%';
+        document.getElementById('progressCount').textContent = pct + '% Complete';
+        document.getElementById('progressSection').textContent = step.sectionIcon + ' ' + step.sectionTitle;
+    },
 
-function nextQuestion() {
-    if (!validateCurrentQuestion()) return;
+    renderStep() {
+        const step = this.allSteps[this.currentStepIndex];
+        const container = document.getElementById('quiz-content');
+        const anim = this.direction === 'right' ? 'slide-in-right' : 'slide-in-left';
 
-    if (AppState.currentQuestionIndex < AppState.allQuestions.length - 1) {
-        AppState.currentQuestionIndex++;
-        renderQuestion('next');
-    } else {
-        calculateAndShowResults();
-    }
-}
+        document.getElementById('btnBack').style.display = '';
+        this.updateProgress(step);
 
-// Validation
-function validateCurrentQuestion() {
-    const question = AppState.allQuestions[AppState.currentQuestionIndex];
-    if (question.type === 'section-intro') return true;
+        let html = `<div class="question-card ${anim}" id="questionCard">`;
+        html += `<div class="question-number">Question ${step.sectionQuestionNumber} of ${step.sectionTotalQuestions}</div>`;
+        html += `<h2 class="question-text">${step.text}</h2>`;
 
-    const answer = AppState.answers[question.id];
-    const questionCard = document.querySelector('.question-card');
-
-    if (!answer || (typeof answer === 'string' && answer.trim() === '')) {
-        if (questionCard) {
-            questionCard.classList.add('shake');
-            questionCard.classList.add('invalid');
-            setTimeout(() => questionCard.classList.remove('shake'), 500);
+        if (step.qType === 'text') {
+            const val = this.answers[step.id] || '';
+            html += `<div class="input-group">
+                <input type="text" class="text-input" id="textInput"
+                    placeholder="${step.placeholder || 'Type your answer...'}"
+                    value="${this.escapeHtml(val)}" autocomplete="off" maxlength="80">
+            </div>`;
+        } else {
+            html += '<div class="options-list">';
+            step.options.forEach(opt => {
+                const isSel = this.answers[step.id] === opt.value;
+                html += `<div class="option-card ${isSel ? 'selected' : ''}"
+                    onclick="app.selectOption('${step.id}', '${opt.value}', this)">
+                    <span class="option-letter">${opt.letter}</span>
+                    <span class="option-text">${opt.text}</span>
+                    <span class="option-check">&#10003;</span>
+                </div>`;
+            });
+            html += '</div>';
         }
-        return false;
-    }
 
-    if (questionCard) questionCard.classList.remove('invalid');
-    return true;
-}
+        html += '</div>';
+        container.innerHTML = html;
 
-// Section helpers
-function sectionQuestionCount(sectionKey) {
-    return AppState.allQuestions.filter(q => q.sectionKey === sectionKey && q.type !== 'section-intro').length;
-}
+        if (step.qType === 'text') {
+            const input = document.getElementById('textInput');
+            input.addEventListener('input', () => {
+                this.answers[step.id] = input.value.trim();
+                this.updateNavButtons();
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && input.value.trim()) this.nextStep();
+            });
+            setTimeout(() => input.focus(), 300);
+        }
 
-function sectionQuestionIndex(idx) {
-    const q = AppState.allQuestions[idx];
-    let count = 0;
-    for (let i = 0; i <= idx; i++) {
-        const qi = AppState.allQuestions[i];
-        if (qi.sectionKey === q.sectionKey && qi.type !== 'section-intro') count++;
-    }
-    return count;
-}
+        this.updateNavButtons();
+    },
 
-// Progress bar update
-function updateProgress() {
-    const totalActual = AppState.allQuestions.filter(q => q.type !== 'section-intro').length;
-    const answeredActual = AppState.allQuestions
-        .slice(0, AppState.currentQuestionIndex)
-        .filter(q => q.type !== 'section-intro').length;
-    const progress = Math.round((answeredActual / totalActual) * 100);
+    escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    },
 
-    DOM.progressFill.style.width = `${progress}%`;
-    DOM.progressText.textContent = `${progress}% Complete`;
+    selectOption(qId, value, el) {
+        this.answers[qId] = value;
+        el.closest('.options-list').querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        this.updateNavButtons();
+        setTimeout(() => this.nextStep(), 350);
+    },
 
-    const question = AppState.allQuestions[AppState.currentQuestionIndex];
-    if (DOM.progressSectionIcon) DOM.progressSectionIcon.textContent = question.sectionIcon;
-    if (DOM.progressSectionName) DOM.progressSectionName.textContent = question.sectionTitle;
-}
+    updateNavButtons() {
+        const step = this.allSteps[this.currentStepIndex];
+        const btnNext = document.getElementById('btnNext');
+        const btnBack = document.getElementById('btnBack');
 
-// Navigation buttons update
-function updateNavigation() {
-    const question = AppState.allQuestions[AppState.currentQuestionIndex];
-    const isLastItem = AppState.currentQuestionIndex === AppState.allQuestions.length - 1;
-    const isFirstItem = AppState.currentQuestionIndex === 0;
+        btnBack.style.display = '';
+        const answer = this.answers[step.id];
+        const hasAnswer = step.qType === 'text'
+            ? !!(answer && answer.trim().length > 0)
+            : !!answer;
 
-    if (isFirstItem) {
-        DOM.prevBtn.style.display = 'none';
-    } else {
-        DOM.prevBtn.style.display = '';
-        DOM.prevBtn.disabled = false;
-    }
+        if (step.qType === 'single') {
+            btnNext.style.display = 'none';
+        } else {
+            btnNext.style.display = '';
+            btnNext.disabled = !hasAnswer;
+            const isLast = this.currentStepIndex === this.allSteps.length - 1;
+            btnNext.innerHTML = isLast ? 'See My Results &#10148;' : 'Next &#8594;';
+        }
+        document.querySelector('.quiz-nav').style.justifyContent = 'space-between';
+    },
 
-    if (question.type === 'section-intro') {
-        DOM.nextBtn.textContent = "Let's Begin \u2192";
-    } else if (isLastItem) {
-        DOM.nextBtn.textContent = 'See My Results \u279C';
-    } else {
-        DOM.nextBtn.textContent = 'Next \u2192';
-    }
-}
+    nextStep() {
+        const step = this.allSteps[this.currentStepIndex];
+        const answer = this.answers[step.id];
+        const hasAnswer = step.qType === 'text'
+            ? !!(answer && answer.trim().length > 0)
+            : !!answer;
 
-// Section intro rendering
-function renderSectionIntro(question, direction = 'none') {
-    const sectionIndex = sectionOrder.indexOf(question.sectionKey);
-    let animClass = 'fade-in';
-    if (direction === 'next') animClass = 'slide-in-right';
-    if (direction === 'prev') animClass = 'slide-in-left';
+        if (!hasAnswer) {
+            const card = document.getElementById('questionCard');
+            if (card) { card.classList.add('shake'); setTimeout(() => card.classList.remove('shake'), 500); }
+            return;
+        }
 
-    DOM.quizContent.innerHTML = `
-        <div class="section-intro-card ${animClass}">
-            <span class="section-intro-icon">${question.sectionIcon}</span>
-            <span class="section-intro-badge">Section ${sectionIndex + 1}</span>
-            <h2 class="section-intro-title">${question.sectionTitle}</h2>
-            <p class="section-intro-subtitle">${question.sectionSubtitle}</p>
-        </div>
-    `;
-    window.scrollTo(0, 0);
-}
+        if (this.currentStepIndex < this.allSteps.length - 1) {
+            this.direction = 'right';
+            this.currentStepIndex++;
+            this.renderStep();
+        } else {
+            this.showContactCapture();
+        }
+    },
 
-// Main render function
-function renderQuestion(direction = 'none') {
-    const question = AppState.allQuestions[AppState.currentQuestionIndex];
+    nextQuestion() {
+        if (this._contactMode) {
+            this.showResults();
+            return;
+        }
+        this.nextStep();
+    },
 
-    updateProgress();
-    updateNavigation();
+    prevQuestion() {
+        if (this._contactMode) {
+            this._contactMode = false;
+            this.direction = 'left';
+            this.renderStep();
+            return;
+        }
+        if (this.currentStepIndex > 0) {
+            this.direction = 'left';
+            this.currentStepIndex--;
+            this.renderStep();
+        } else {
+            this.showScreen('welcome');
+        }
+    },
 
-    if (question.type === 'section-intro') {
-        renderSectionIntro(question, direction);
-        return;
-    }
+    showContactCapture() {
+        const container = document.getElementById('quiz-content');
+        const btnNext = document.getElementById('btnNext');
+        const btnBack = document.getElementById('btnBack');
 
-    let animClass = 'fade-in';
-    if (direction === 'next') animClass = 'slide-in-right';
-    if (direction === 'prev') animClass = 'slide-in-left';
+        btnBack.style.display = '';
+        btnNext.style.display = '';
+        btnNext.innerHTML = 'See My Results &#10148;';
+        btnNext.disabled = true;
+        document.querySelector('.quiz-nav').style.justifyContent = 'space-between';
 
-    const secQ = sectionQuestionIndex(AppState.currentQuestionIndex);
-    const secTotal = sectionQuestionCount(question.sectionKey);
+        document.getElementById('progressFill').style.width = '100%';
+        document.getElementById('progressCount').textContent = '100% Complete';
+        document.getElementById('progressSection').textContent = 'Almost There!';
 
-    DOM.quizContent.innerHTML = `
-        <div class="question-card ${animClass}" id="questionCard" data-question-id="${question.id}">
-            <div class="question-number">Question ${secQ} of ${secTotal}</div>
-            <h2 class="question-text">${question.text}</h2>
-            ${renderQuestionInput(question)}
-        </div>
-    `;
+        const emailVal = this.answers._email || '';
+        const phoneVal = this.answers._phone || '';
 
-    attachQuestionListeners(question);
-    window.scrollTo(0, 0);
-}
-
-// Input rendering
-function renderQuestionInput(question) {
-    const currentAnswer = AppState.answers[question.id];
-    const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
-
-    switch (question.type) {
-        case 'text':
-            return `
-                <input type="text"
-                    class="text-input"
-                    id="${question.id}"
-                    placeholder="${question.placeholder || 'Type your answer...'}"
-                    value="${currentAnswer || ''}"
-                    autocomplete="off">
-            `;
-
-        case 'single':
-        case 'categorical':
-        case 'scored':
-            return `
-                <div class="options-list">
-                    ${question.options.map((opt, i) => `
-                        <div class="option-card ${currentAnswer === opt.value ? 'selected' : ''}" data-value="${opt.value}">
-                            <span class="option-letter">${letters[i] !== undefined ? letters[i] : i + 1}</span>
-                            <span class="option-text">${opt.label}</span>
-                            <span class="option-check">&#10003;</span>
-                        </div>
-                    `).join('')}
+        container.innerHTML = `
+            <div class="question-card slide-in-right" id="questionCard">
+                <div class="contact-capture-header">
+                    <span class="contact-icon">&#127881;</span>
+                    <h2 class="question-text">Your health blueprint is ready!</h2>
+                    <p class="contact-subtitle">Enter your details below to unlock your personalised report.</p>
                 </div>
-            `;
-
-        case 'likert':
-            const selectedValue = parseInt(currentAnswer) || 0;
-            return `
-                <div class="personality-scale">
-                    <span class="scale-label scale-label-left">Disagree</span>
-                    <div class="scale-circles">
-                        ${[1, 2, 3, 4, 5].map(val => {
-                            const sizeClass = val === 1 || val === 5 ? 'size-lg' :
-                                val === 2 || val === 4 ? 'size-md' : 'size-sm';
-                            const colorClass = val <= 2 ? 'color-disagree' :
-                                val >= 4 ? 'color-agree' : 'color-neutral';
-                            return `<div class="scale-circle ${sizeClass} ${colorClass} ${selectedValue === val ? 'selected' : ''}" data-value="${val}"></div>`;
-                        }).join('')}
-                    </div>
-                    <span class="scale-label scale-label-right">Agree</span>
+                <div class="input-group" style="margin-bottom: 1rem;">
+                    <label class="input-label">Email Address <span class="required">*</span></label>
+                    <input type="email" class="text-input" id="contactEmail"
+                        placeholder="your@email.com"
+                        value="${this.escapeHtml(emailVal)}" autocomplete="email">
                 </div>
-            `;
+                <div class="input-group">
+                    <label class="input-label">Phone Number <span class="optional-label">(optional)</span></label>
+                    <input type="tel" class="text-input" id="contactPhone"
+                        placeholder="+91 98765 43210"
+                        value="${this.escapeHtml(phoneVal)}" autocomplete="tel">
+                </div>
+                <p class="contact-privacy">&#128274; Your information is 100% private and will never be shared.</p>
+            </div>`;
 
-        default:
-            return '';
-    }
-}
+        this._contactMode = true;
+        this.currentScreen = 'contact';
 
-// Event listeners for question interactions
-function attachQuestionListeners(question) {
-    const textInput = document.querySelector('.text-input');
-    if (textInput) {
-        textInput.addEventListener('input', (e) => {
-            AppState.answers[e.target.id] = e.target.value;
-            removeInvalidState();
+        const emailInput = document.getElementById('contactEmail');
+        const phoneInput = document.getElementById('contactPhone');
+
+        const validate = () => {
+            const email = emailInput.value.trim();
+            this.answers._email = email;
+            this.answers._phone = phoneInput.value.trim();
+            btnNext.disabled = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        };
+
+        emailInput.addEventListener('input', validate);
+        phoneInput.addEventListener('input', validate);
+        emailInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !btnNext.disabled) this.showResults();
         });
-        textInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.target.value.trim()) nextQuestion();
+        phoneInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !btnNext.disabled) this.showResults();
         });
-        setTimeout(() => textInput.focus(), 200);
-    }
 
-    document.querySelectorAll('.option-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const value = card.dataset.value;
-            AppState.answers[question.id] = value;
+        setTimeout(() => emailInput.focus(), 300);
+        validate();
+    },
 
-            card.closest('.options-list').querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
+    showResults() {
+        this._contactMode = false;
+        const emailInput = document.getElementById('contactEmail');
+        const phoneInput = document.getElementById('contactPhone');
+        if (emailInput) this.answers._email = emailInput.value.trim();
+        if (phoneInput) this.answers._phone = phoneInput.value.trim();
 
-            removeInvalidState();
-            setTimeout(() => nextQuestion(), 500);
-        });
-    });
+        this.results = ScoringEngine.calculateResults(this.answers);
+        this.renderResults();
+        this.showScreen('results');
+        setTimeout(() => this.renderRadarChart(), 200);
+    },
 
-    const scaleCircles = document.querySelectorAll('.scale-circle');
-    scaleCircles.forEach(circle => {
-        circle.addEventListener('click', () => {
-            AppState.answers[question.id] = circle.dataset.value;
-            scaleCircles.forEach(c => c.classList.remove('selected'));
-            circle.classList.add('selected');
-            removeInvalidState();
-            setTimeout(() => nextQuestion(), 500);
-        });
-    });
-}
+    renderResults() {
+        const r = this.results;
+        const container = document.getElementById('resultsContainer');
+        const name = r.userName;
 
-function removeInvalidState() {
-    const card = document.querySelector('.question-card');
-    if (card) card.classList.remove('invalid');
-}
+        const statusFor = (pct) => pct >= 80 ? 'strength' : pct >= 50 ? 'growth' : 'priority';
+        const statusLabel = (s) => s === 'strength' ? 'Strength' : s === 'growth' ? 'Growth Area' : 'Priority Gap';
 
-// ============================
-// Results Functions
-// ============================
-function calculateAndShowResults() {
-    AppState.results = ScoringEngine.calculateResults(AppState.answers);
-    showScreen('results');
-    renderResults();
-}
-
-function getScoreLevel(score) {
-    if (score >= 75) return { label: 'Excellent', color: '#4ade80' };
-    if (score >= 50) return { label: 'Good', color: '#f97316' };
-    if (score >= 25) return { label: 'Needs Attention', color: '#ef4444' };
-    return { label: 'Critical', color: '#dc2626' };
-}
-
-function getSnapshotLabel(score) {
-    if (score >= 75) return { label: 'Strong', color: '#4ade80' };
-    if (score >= 50) return { label: 'Transitioning', color: '#3b82f6' };
-    return { label: 'Needs Focus', color: '#ef4444' };
-}
-
-function renderResults() {
-    const { results } = AppState;
-    const phaseLabel = results.overallScore <= 40 ? 'Depleted' : results.overallScore <= 70 ? 'Transitioning' : 'Flowing';
-
-    const physLabel = getSnapshotLabel(results.physicalHealth);
-    const mentLabel = getSnapshotLabel(results.mentalWellness);
-    const natLabel = getSnapshotLabel(results.naturalAlignment);
-
-    const html = `
-        <!-- Header -->
-        <div class="report-header">
-            <div class="report-badge">PERSONALIZED HEALTH & LIFESTYLE BLUEPRINT</div>
-            <h1 class="report-title">Health Report for ${results.userName}</h1>
-            <p class="report-intro">
-                You are neither broken nor behind. This report is a <span class="text-highlight">thoughtful
-                reflection</span> of where your <span class="text-highlight">body, mind</span>, and
-                <span class="text-highlight">habits</span> may have shifted out of balance \u2014 and a clear path to restore
-                wellness and vitality.
-            </p>
-            <div class="report-callout">
-                <span class="callout-dot"></span>
-                YOUR JOURNEY TO BETTER HEALTH STARTS WITH AWARENESS. GENTLE, CONSISTENT STEPS ARE THE MOST EFFECTIVE PATH FORWARD.
-            </div>
-        </div>
-
-        <!-- Overall Score Card -->
-        <div class="report-card overall-score-card">
-            <div class="score-card-header">
-                <span class="card-dot"></span>
-                <span class="card-label">Overall Alignment</span>
-            </div>
-            <div class="overall-score-layout">
-                <div class="score-text-side">
-                    <div class="score-label-small">HEALTH ALIGNMENT SCORE</div>
-                    <div class="score-big-number" style="color: ${results.phaseColor};">${results.overallScore}</div>
-                    <div class="score-ranges">
-                        <span>0\u201340: Needs Attention</span>
-                        <span>41\u201370: Building</span>
-                        <span>71\u2013100: Thriving</span>
-                    </div>
-                    <div class="phase-section">
-                        <p class="phase-prefix">${results.userName}, you are currently in the</p>
-                        <h3 class="phase-name" style="color: ${results.phaseColor};">${results.phase}</h3>
-                        <p class="phase-description">${results.phaseDescription}</p>
-                    </div>
+        const sectionBarsHTML = r.allDimensions.map(d => {
+            const status = statusFor(d.score);
+            return `<div class="result-bar-item">
+                <div class="bar-label">${d.info.icon}</div>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width: ${d.score}%; background: ${d.info.color};">${d.score}%</div>
                 </div>
-                <div class="score-ring-side">
-                    <div class="donut-ring" id="overall-donut"></div>
-                </div>
-            </div>
-        </div>
+                <div class="bar-title">${d.info.name}</div>
+                <div class="bar-status status-${status}">${statusLabel(status)}</div>
+            </div>`;
+        }).join('');
 
-        <!-- Quick Snapshot -->
-        <div class="report-card">
-            <h2 class="card-title">Quick Snapshot</h2>
-            <p class="card-subtitle">A closer look at how your health systems are functioning beneath the surface.</p>
-            <div class="snapshot-tags">
-                <span class="snapshot-tag" style="border-color: ${physLabel.color}; color: ${physLabel.color};">Physical: ${physLabel.label}</span>
-                <span class="snapshot-tag" style="border-color: ${mentLabel.color}; color: ${mentLabel.color};">Mental: ${mentLabel.label}</span>
-                <span class="snapshot-tag" style="border-color: ${natLabel.color}; color: ${natLabel.color};">Natural Living: ${natLabel.label}</span>
-            </div>
-            <div class="snapshot-bars">
-                <div class="snapshot-bar-row">
-                    <span class="bar-label">Physical Health</span>
-                    <div class="bar-track">
-                        <div class="bar-fill bar-fill-animate" style="width: 0%; --target-width: ${results.physicalHealth}%; background: linear-gradient(90deg, #ef4444, #f97316);"></div>
-                    </div>
-                    <span class="bar-value">${results.physicalHealth}</span>
-                </div>
-                <div class="snapshot-bar-row">
-                    <span class="bar-label">Mental Wellness</span>
-                    <div class="bar-track">
-                        <div class="bar-fill bar-fill-animate" style="width: 0%; --target-width: ${results.mentalWellness}%; background: linear-gradient(90deg, #3b82f6, #8b5cf6);"></div>
-                    </div>
-                    <span class="bar-value">${results.mentalWellness}</span>
-                </div>
-                <div class="snapshot-bar-row">
-                    <span class="bar-label">Natural Alignment</span>
-                    <div class="bar-track">
-                        <div class="bar-fill bar-fill-animate" style="width: 0%; --target-width: ${results.naturalAlignment}%; background: linear-gradient(90deg, #4ade80, #14b8a6);"></div>
-                    </div>
-                    <span class="bar-value">${results.naturalAlignment}</span>
-                </div>
-            </div>
-        </div>
+        const strongest = r.strongestAreas[0];
+        const weakest = r.topConcerns[0];
 
-        <!-- Health Wheel (Radar Chart) -->
-        <div class="report-card">
-            <h2 class="card-title">Your Health Wheel</h2>
-            <p class="card-subtitle">This radar shows how evenly your health is distributed across all core dimensions.</p>
-            <div class="radar-chart-container">
-                <canvas id="healthRadarChart" width="350" height="350"></canvas>
-            </div>
-        </div>
+        const dailyLifeHTML = r.corePattern.dailyLife.map(line => `<li>${line}</li>`).join('');
 
-        <!-- Dimension Scores -->
-        <div class="report-card">
-            <h2 class="card-title">Dimension Scores</h2>
-            <p class="card-subtitle">Each bar is a 0\u2013100 score based on your answers. Lower scores are where your body is asking for more care.</p>
-            <div class="dimension-pills">
-                ${results.allDimensions.map(d => {
-                    const pct = d.score;
-                    return `
-                    <div class="dimension-pill-item">
-                        <div class="pill-bar-container">
-                            <div class="pill-bar-bg">
-                                <div class="pill-bar-fill pill-fill-animate" style="height: 0%; --target-height: ${pct}%; background: ${d.info.color};"></div>
-                            </div>
-                        </div>
-                        <span class="pill-label">${d.info.icon} ${d.info.name}</span>
-                        <span class="pill-score" style="color: ${d.info.color};">${pct}%</span>
-                    </div>
-                `;
-                }).join('')}
-            </div>
-            <div class="dimension-insight">
-                <p>Your strongest area is <strong style="color: ${results.strongestAreas[0]?.info?.color || '#4ade80'};">${results.strongestAreas[0]?.info?.name || 'Self Awareness'}</strong>.
-                Continue nurturing this strength \u2014 it serves as the foundation that will support improvement across other dimensions.</p>
-            </div>
-        </div>
-
-        <!-- Areas Needing Attention -->
-        <div class="report-card attention-card">
-            <p>The areas requiring your most immediate attention are
-            <strong>${results.topConcerns[0]?.info?.name || ''}</strong> and
-            <strong>${results.topConcerns[1]?.info?.name || ''}</strong>.
-            These are where focused care and intention will yield the most meaningful results.</p>
-        </div>
-
-        <!-- Core Pattern -->
-        <div class="report-card pattern-card">
-            <div class="pattern-badge">WHAT'S REALLY GOING ON</div>
-            <h2 class="card-title">Your Core Health Pattern</h2>
-            <p class="pattern-description">${results.corePattern.pattern}</p>
-            <h3 class="pattern-subtitle">How this shows up in daily life</h3>
-            <ul class="pattern-list">
-                ${results.corePattern.dailyLife.map(item => `<li>${item}</li>`).join('')}
-            </ul>
-        </div>
-
-        <!-- Root Cause -->
-        <div class="report-card">
-            <h3 class="root-cause-title">Root cause in health terms</h3>
-            <p class="root-cause-text">At its core, your body still operates on patterns that have accumulated over time.
-            Until these patterns shift through consistent, natural lifestyle changes, your health reserves will continue to deplete under pressure.</p>
-        </div>
-
-        <!-- 7-Day Plan -->
-        <div class="report-card plan-card">
-            <div class="plan-badge">YOUR NEXT 7 DAYS</div>
-            <h2 class="card-title">7-Day Health Reset</h2>
-            <p class="card-subtitle">This structured 7-day programme is designed to help you translate awareness into consistent
-            action \u2014 gentle, repeatable practices your body can rely upon, even during life\u2019s most demanding moments.</p>
-            <div class="plan-timeline">
-                ${results.sevenDayPlan.map(day => `
-                    <div class="plan-day">
-                        <div class="plan-dot" style="background: ${day.color};"></div>
-                        <div class="plan-day-content">
-                            <div class="plan-day-label">DAY ${day.day}</div>
-                            <div class="plan-day-text">
-                                <strong style="color: ${day.color};">${day.label}:</strong> ${day.task}
-                            </div>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-
-        <!-- Personal Note -->
-        <div class="report-card note-card">
-            <div class="note-header">
-                <div class="note-avatar">V</div>
+        const planHTML = r.sevenDayPlan.map(day => `
+            <div class="plan-day">
+                <div class="plan-day-num">Day ${day.day}</div>
                 <div>
-                    <div class="note-badge">A PERSONAL NOTE FROM VISHAL</div>
+                    <div class="plan-day-label" style="color: ${day.color};">${day.label}</div>
+                    <div class="plan-day-task">${day.task}</div>
+                </div>
+            </div>`).join('');
+
+        container.innerHTML = `
+            <div class="report-section report-header fade-in">
+                <div class="report-icon-large">&#127793;</div>
+                <h1>Your Personalised Health Blueprint</h1>
+                <p class="report-greeting">Dear <strong>${name}</strong>,</p>
+                <p>Before you read this&hellip; take a deep breath.</p>
+                <p>The fact that you took time to reflect on your health today says something beautiful &mdash; you care about how you feel, and you're ready for something to shift.</p>
+            </div>
+
+            <div class="report-section report-score fade-in" style="animation-delay:0.1s">
+                <h2>Your Health Alignment Score</h2>
+                <div class="score-circle-wrapper">
+                    <div class="score-circle">
+                        <svg viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#e8e4de" stroke-width="8"/>
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="url(#scoreGradient)" stroke-width="8" stroke-linecap="round"
+                                stroke-dasharray="${(r.overallScore / 100) * 339.3} 339.3" transform="rotate(-90 60 60)" class="score-ring"/>
+                            <defs><linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#4db89a"/><stop offset="100%" stop-color="#d4a853"/>
+                            </linearGradient></defs>
+                        </svg>
+                        <div class="score-value">
+                            <span class="score-num">${r.overallScore}</span>
+                            <span class="score-max">/ 100</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="category-badge">${r.phase}</div>
+                <p class="category-desc">${r.phaseDescription}</p>
+            </div>
+
+            <div class="report-section report-breakdown fade-in" style="animation-delay:0.2s">
+                <h2>Your 8 Health Dimensions</h2>
+                <div class="section-bars">${sectionBarsHTML}</div>
+                <div class="legend">
+                    <span class="legend-item"><span class="legend-dot strength"></span> Strength (80&ndash;100%)</span>
+                    <span class="legend-item"><span class="legend-dot growth"></span> Growth Area (50&ndash;79%)</span>
+                    <span class="legend-item"><span class="legend-dot priority"></span> Priority Gap (&lt;50%)</span>
+                </div>
+                <div class="radar-wrapper" style="margin-top:1.5rem;">
+                    <canvas id="healthRadarChart"></canvas>
                 </div>
             </div>
-            <p class="note-text">I understand what it means to feel stuck in unhealthy patterns \u2014 while quietly knowing you deserve better.
-            This report is not a judgement; it is a compassionate guide showing you precisely where your body is calling for attention, better habits,
-            and genuine support. Take even one meaningful step from this report today, and you will already be on the path to a more balanced, fulfilling life.</p>
-            <p class="note-signature">With care, Vishal</p>
-        </div>
 
-        <!-- Disclaimer -->
-        <p class="report-disclaimer">This report is not a medical diagnosis. It is a reflective assessment designed to illuminate
-        where your lifestyle may benefit from thoughtful, sustained support.</p>
+            ${strongest ? `
+            <div class="report-section fade-in" style="animation-delay:0.3s">
+                <div class="insight-card insight-positive">
+                    <div class="insight-icon">&#127775;</div>
+                    <h3>Your Beautiful Strength</h3>
+                    <p>One of your most powerful areas is <strong>${strongest.info.name}</strong> (${strongest.score}%).</p>
+                    <p>This shows you already have a foundation to build upon. Keep nurturing this &mdash; it's the anchor your other habits can grow from.</p>
+                </div>
+            </div>` : ''}
 
-        <!-- CTA Section -->
-        <div class="report-card cta-card">
-            <div class="cta-label">SPECIAL OFFER FOR YOU</div>
-            <h2 class="cta-title">21-Day Health Reset Program</h2>
-            <p class="cta-description">It\u2019s time to honor your need for restoration. The 21-Day Health Reset is designed specifically
-            for people like you who are ready to transform their health with natural, sustainable habits.</p>
-            <div class="cta-features">
-                <div class="cta-feature">
-                    <span class="cta-feature-icon">\u{1F33F}</span>
-                    <div>
-                        <div class="cta-feature-title">Daily Health Practices</div>
-                        <div class="cta-feature-desc">5-10 minute rituals designed for busy lifestyles</div>
-                    </div>
+            ${weakest ? `
+            <div class="report-section fade-in" style="animation-delay:0.4s">
+                <div class="insight-card insight-gap">
+                    <div class="insight-icon">&#128161;</div>
+                    <h3>Your Silent Gap</h3>
+                    <p>Your body is quietly asking for support in <strong>${weakest.info.name}</strong> (${weakest.score}%).</p>
+                    <p>This isn't a flaw, ${name}. It's simply an area that hasn't received enough attention yet &mdash; and small, consistent changes here will create the biggest impact.</p>
                 </div>
-                <div class="cta-feature">
-                    <span class="cta-feature-icon">\u{1F9D8}</span>
-                    <div>
-                        <div class="cta-feature-title">Guided Wellness</div>
-                        <div class="cta-feature-desc">Customized for your health phase</div>
-                    </div>
-                </div>
-                <div class="cta-feature">
-                    <span class="cta-feature-icon">\u{1F4F1}</span>
-                    <div>
-                        <div class="cta-feature-title">WhatsApp Community</div>
-                        <div class="cta-feature-desc">Connect with like-minded people</div>
-                    </div>
-                </div>
-                <div class="cta-feature">
-                    <span class="cta-feature-icon">\u{1F4D3}</span>
-                    <div>
-                        <div class="cta-feature-title">Health Tracking Journal</div>
-                        <div class="cta-feature-desc">Monitor your transformation daily</div>
-                    </div>
+            </div>` : ''}
+
+            <div class="report-section report-mirror fade-in" style="animation-delay:0.5s">
+                <h2>Your Core Pattern</h2>
+                <p>${r.corePattern.pattern}</p>
+                <ul class="mirror-list">${dailyLifeHTML}</ul>
+            </div>
+
+            <div class="report-section fade-in" style="animation-delay:0.6s">
+                <div class="truth-card">
+                    <h3>The Truth About Your Health</h3>
+                    <p>This isn't about perfection.</p>
+                    <p>It's about <strong>alignment &mdash; listening to what your body already knows</strong>.</p>
+                    <p>The moment you give it the right rhythm, food, rest, and care&hellip; everything else starts to fall into place.</p>
                 </div>
             </div>
-            <button class="cta-button" onclick="window.open('https://example.com/program', '_blank')">
-                <span>Yes! I Want to Reset My Health</span>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
-            </button>
-            <p class="cta-guarantee">100% Satisfaction Guarantee | Start transforming today</p>
-        </div>
 
-        <!-- Retake -->
-        <div class="retake-section">
-            <button class="btn-secondary retake-btn" onclick="retakeQuiz()">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M1 4v6h6M23 20v-6h-6"/>
-                    <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/>
-                </svg>
-                <span>Retake Quiz</span>
-            </button>
-        </div>
-    `;
+            <div class="report-section report-need fade-in" style="animation-delay:0.65s">
+                <h2>What You Need Now</h2>
+                <p>Right now, your body is not asking for more information. It's asking for:</p>
+                <div class="needs-grid">
+                    <div class="need-item"><span>&#128218;</span> Simple daily habits</div>
+                    <div class="need-item"><span>&#127793;</span> Natural, whole foods</div>
+                    <div class="need-item"><span>&#128164;</span> Restful, consistent sleep</div>
+                    <div class="need-item"><span>&#129504;</span> A calm, focused mind</div>
+                </div>
+            </div>
 
-    DOM.resultsContainer.innerHTML = html;
+            <div class="report-section report-plan fade-in" style="animation-delay:0.7s">
+                <h2>Your 7-Day Starter Plan</h2>
+                <p>Begin with these small, focused steps &mdash; one day at a time.</p>
+                <div class="plan-days">${planHTML}</div>
+            </div>
 
-    setTimeout(() => {
-        renderDonutChart(results.overallScore, results.phaseColor);
-        renderRadarChart(results);
-        animateBars();
-    }, 200);
-}
+            <div class="report-section report-cta fade-in" style="animation-delay:0.8s">
+                <div class="cta-card">
+                    <h2>Your Next Step</h2>
+                    <p>${name}, you now have a clear picture of where you are &mdash; and where your body is guiding you next.</p>
+                    <p>If you're ready to go deeper, I'd like to personally walk you through:</p>
+                    <ul>
+                        <li>How to build daily habits that align with your body</li>
+                        <li>How to reverse lifestyle patterns naturally</li>
+                        <li>How to create lasting energy, clarity, and calm</li>
+                    </ul>
+                    <p><strong>This is your moment. Small consistent steps are where real change begins.</strong></p>
+                    <button class="btn btn-cta" onclick="window.open('https://gonature.in/', '_blank')">Book Your Free Consultation</button>
+                </div>
+            </div>
 
-function renderDonutChart(score, color) {
-    const container = document.getElementById('overall-donut');
-    if (!container) return;
+            <div class="report-section report-retake fade-in" style="animation-delay:0.9s">
+                <button class="btn btn-secondary" onclick="app.restart()">&#8634; Retake Assessment</button>
+            </div>
+        `;
+    },
 
-    const size = 160;
-    const strokeWidth = 12;
-    const radius = (size - strokeWidth) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const offset = circumference - (score / 100) * circumference;
-
-    container.innerHTML = `
-        <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="donut-svg">
-            <circle cx="${size/2}" cy="${size/2}" r="${radius}"
-                fill="none" stroke="#e5e7eb" stroke-width="${strokeWidth}"/>
-            <circle cx="${size/2}" cy="${size/2}" r="${radius}"
-                fill="none" stroke="${color}" stroke-width="${strokeWidth}"
-                stroke-dasharray="${circumference}"
-                stroke-dashoffset="${circumference}"
-                stroke-linecap="round"
-                transform="rotate(-90 ${size/2} ${size/2})"
-                class="donut-progress"
-                style="--target-offset: ${offset}; --circumference: ${circumference};" />
-            <text x="${size/2}" y="${size/2 + 8}" text-anchor="middle"
-                font-size="2.2rem" font-weight="800" fill="${color}" font-family="var(--font-display)">${score}</text>
-        </svg>
-    `;
-
-    setTimeout(() => {
-        const progressCircle = container.querySelector('.donut-progress');
-        if (progressCircle) {
-            progressCircle.style.transition = 'stroke-dashoffset 1.5s ease-out';
-            progressCircle.style.strokeDashoffset = offset;
-        }
-    }, 100);
-}
-
-function renderRadarChart(results) {
-    const canvas = document.getElementById('healthRadarChart');
-    if (!canvas || typeof Chart === 'undefined') return;
-
-    const ctx = canvas.getContext('2d');
-    const labels = results.allDimensions.map(d => d.info.name);
-    const data = results.allDimensions.map(d => d.score);
-
-    new Chart(ctx, {
-        type: 'radar',
-        data: {
-            labels,
-            datasets: [{
-                label: 'Your Score',
-                data,
-                backgroundColor: 'rgba(77, 184, 154, 0.2)',
-                borderColor: 'rgba(77, 184, 154, 0.8)',
-                borderWidth: 2,
-                pointBackgroundColor: 'rgba(77, 184, 154, 1)',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 5
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: { legend: { display: false } },
-            scales: {
-                r: {
-                    beginAtZero: true,
-                    max: 100,
-                    ticks: { stepSize: 25, display: false },
-                    grid: { color: 'rgba(0,0,0,0.06)' },
-                    angleLines: { color: 'rgba(0,0,0,0.06)' },
-                    pointLabels: {
-                        font: { family: "'Inter', sans-serif", size: 11, weight: '500' },
-                        color: '#475569'
+    renderRadarChart() {
+        const canvas = document.getElementById('healthRadarChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+        const r = this.results;
+        new Chart(canvas.getContext('2d'), {
+            type: 'radar',
+            data: {
+                labels: r.allDimensions.map(d => d.info.label),
+                datasets: [{
+                    label: 'Your Score',
+                    data: r.allDimensions.map(d => d.score),
+                    backgroundColor: 'rgba(77, 184, 154, 0.18)',
+                    borderColor: 'rgba(77, 184, 154, 0.9)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#d4a853',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    r: {
+                        suggestedMin: 0,
+                        suggestedMax: 100,
+                        ticks: { stepSize: 25, color: '#94a3b8', backdropColor: 'transparent', font: { size: 10 } },
+                        grid: { color: '#e8e4de' },
+                        angleLines: { color: '#e8e4de' },
+                        pointLabels: { color: '#475569', font: { size: 10, weight: '600' } }
                     }
                 }
             }
-        }
-    });
-}
+        });
+    },
 
-function animateBars() {
-    document.querySelectorAll('.bar-fill-animate').forEach(bar => {
-        const targetWidth = bar.style.getPropertyValue('--target-width');
-        setTimeout(() => {
-            bar.style.transition = 'width 1.2s ease-out';
-            bar.style.width = targetWidth;
-        }, 100);
-    });
+    restart() {
+        this.answers = {};
+        this.currentStepIndex = 0;
+        this.results = null;
+        this.direction = 'right';
+        this.allSteps = this.buildSteps();
+        this.showScreen('welcome');
+    }
+};
 
-    document.querySelectorAll('.pill-fill-animate').forEach(bar => {
-        const targetHeight = bar.style.getPropertyValue('--target-height');
-        setTimeout(() => {
-            bar.style.transition = 'height 1.2s ease-out';
-            bar.style.height = targetHeight;
-        }, 100);
-    });
-}
-
-function retakeQuiz() {
-    AppState.currentScreen = 'welcome';
-    AppState.currentQuestionIndex = 0;
-    AppState.answers = {};
-    showScreen('welcome');
-}
-
-// Initialize on DOM ready
-document.addEventListener('DOMContentLoaded', init);
+app.init();

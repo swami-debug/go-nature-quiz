@@ -1,105 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description"
-        content="Take the GoNature Health & Lifestyle Assessment. Discover your health alignment score and get a personalized wellness blueprint.">
+    <meta name="description" content="Take the GoNature Health & Lifestyle Assessment. Discover your health alignment score and get a personalized wellness blueprint.">
     <title>GoNature Health & Lifestyle Assessment</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
-    <div id="app">
-        <!-- Welcome Screen -->
-        <section id="welcome-screen" class="screen active">
-            <div class="welcome-layout">
-                <!-- Left: Main Content -->
-                <div class="welcome-left">
-                    <div class="brand-badge">
-                        <span>Go Nature Quiz</span>
+    <!-- Welcome Screen -->
+    <div class="screen active" id="screen-welcome">
+        <div class="welcome-layout">
+            <div class="welcome-left">
+                <div class="brand-badge">GoNature</div>
+                <h1 class="welcome-title">Discover Your <span class="gradient-text">Health Alignment</span></h1>
+                <p class="welcome-desc">Answer honestly &mdash; there are no right or wrong answers. This assessment reveals how your daily habits align with your body's natural needs and gives you a personalised wellness blueprint.</p>
+                <div class="welcome-info">
+                    <div class="info-item">
+                        <span class="info-icon">&#9201;</span>
+                        <span>10&ndash;12 minutes</span>
                     </div>
-                    <h1 class="welcome-title">
-                        <span class="gradient-text">Health & Lifestyle</span>
-                        <span class="subtitle">Assessment</span>
-                    </h1>
-                    <p class="welcome-description">
-                        Discover how your daily habits around hydration, nutrition, sleep, exercise, and mental wellness
-                        align with your body's natural needs. This comprehensive assessment will reveal your
-                        <strong>Health Alignment Score</strong> and guide your transformation journey.
-                    </p>
-                    <div class="quiz-info">
-                        <div class="info-item">
-                            <span class="info-icon">&#x23F1;&#xFE0F;</span>
-                            <span>10-12 minutes</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-icon">&#x1F4CA;</span>
-                            <span>Personalized Report</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-icon">&#x2728;</span>
-                            <span>Your Health Phase</span>
-                        </div>
+                    <div class="info-item">
+                        <span class="info-icon">&#128202;</span>
+                        <span>Personalised Report</span>
                     </div>
-                    <button id="start-quiz" class="btn-primary">
-                        <span>Begin Your Health Assessment</span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M5 12h14M12 5l7 7-7 7" />
-                        </svg>
-                    </button>
-                    <p class="coach-name">with <span class="highlight">Vishal</span></p>
+                    <div class="info-item">
+                        <span class="info-icon">&#10024;</span>
+                        <span>Your Health Phase</span>
+                    </div>
                 </div>
-
-                <!-- Right Visual -->
-                <div class="welcome-right">
-                    <div class="eq-logo-panel">
-                        <img src="assets/gonature-logo.jpeg" alt="GoNature Logo" class="welcome-logo">
-                    </div>
+                <button class="btn btn-primary" onclick="app.start()">Begin Your Health Assessment</button>
+                <p class="welcome-tagline">with Vishal &middot; GoNature</p>
+            </div>
+            <div class="welcome-right">
+                <div class="welcome-visual">
+                    <img src="assets/gonature-logo.jpeg" alt="GoNature" class="welcome-logo">
                 </div>
             </div>
-        </section>
+        </div>
+    </div>
 
-        <!-- Quiz Screen -->
-        <section id="quiz-screen" class="screen">
-            <div class="quiz-container">
-                <div class="progress-wrapper">
-                    <div class="progress-bar">
-                        <div id="progress-fill" class="progress-fill"></div>
-                    </div>
-                    <div class="progress-info">
-                        <span class="progress-section" id="progress-section">
-                            <span id="progress-section-icon"></span>
-                            <span id="progress-section-name"></span>
-                        </span>
-                        <span id="progress-text" class="progress-text">0% Complete</span>
-                    </div>
+    <!-- Quiz Screen -->
+    <div class="screen" id="screen-quiz">
+        <div class="quiz-wrapper">
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
                 </div>
-
-                <div id="quiz-content" class="quiz-content">
-                    <!-- Questions will be dynamically inserted here -->
-                </div>
-
-                <div class="quiz-navigation">
-                    <button id="prev-btn" class="btn-secondary">&#8592; Back</button>
-                    <button id="next-btn" class="btn-primary">Next &#8594;</button>
+                <div class="progress-info">
+                    <span class="progress-section" id="progressSection"></span>
+                    <span class="progress-count" id="progressCount"></span>
                 </div>
             </div>
-        </section>
-
-        <!-- Results Screen -->
-        <section id="results-screen" class="screen">
-            <div class="results-container">
-                <!-- Results will be dynamically inserted here -->
+            <div id="quiz-content"></div>
+            <div class="quiz-nav">
+                <button class="btn btn-secondary" id="btnBack" onclick="app.prevQuestion()">&#8592; Back</button>
+                <button class="btn btn-primary" id="btnNext" onclick="app.nextQuestion()">Next &#8594;</button>
             </div>
-        </section>
+        </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div class="screen" id="screen-results">
+        <div class="results-container" id="resultsContainer"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -107,5 +73,4 @@
     <script src="scoring.js"></script>
     <script src="app.js"></script>
 </body>
-
 </html>
