@@ -16,6 +16,15 @@ const app = {
         this.allSteps = this.buildSteps();
     },
 
+    shuffleArray(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    },
+
     buildSteps() {
         const steps = [];
         const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -33,7 +42,11 @@ const app = {
 
                 let options = null;
                 if (q.options) {
-                    options = q.options.map((opt, idx) => ({
+                    let source = q.options;
+                    if (section.scored && q.type === 'scored') {
+                        source = this.shuffleArray(source);
+                    }
+                    options = source.map((opt, idx) => ({
                         value: opt.value,
                         score: opt.score,
                         letter: labels[idx],
