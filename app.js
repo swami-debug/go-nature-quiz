@@ -427,6 +427,7 @@ const app = {
                         <li>How to create lasting energy, clarity, and calm</li>
                     </ul>
                     <p><strong>This is your moment. Small consistent steps are where real change begins.</strong></p>
+                    <button class="btn btn-cta" type="button">Book Your Free Consultation</button>
                 </div>
             </div>
 
