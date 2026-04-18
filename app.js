@@ -1,3 +1,9 @@
+// ─── GoHighLevel webhook ─────────────────────────────────────────
+// Paste your GHL Inbound Webhook URL here (from Workflow trigger).
+// While this is empty, quiz data will NOT be sent anywhere.
+const GHL_WEBHOOK_URL = '';
+// ─────────────────────────────────────────────────────────────────
+
 const app = {
     currentScreen: 'welcome',
     currentStepIndex: 0,
@@ -281,9 +287,82 @@ const app = {
         if (phoneInput) this.answers._phone = phoneInput.value.trim();
 
         this.results = ScoringEngine.calculateResults(this.answers);
+        this.sendToGHL();
         this.renderResults();
         this.showScreen('results');
         setTimeout(() => this.renderRadarChart(), 200);
+    },
+
+    getOptionText(questionId, value) {
+        for (const sectionKey of sectionOrder) {
+            const section = quizData[sectionKey];
+            const q = section.questions.find(x => x.id === questionId);
+            if (q && q.options) {
+                const opt = q.options.find(o => o.value === value);
+                if (opt) return opt.text || opt.label;
+            }
+        }
+        return value;
+    },
+
+    _formatAllAnswers() {
+        const lines = [];
+        sectionOrder.forEach(sectionKey => {
+            const section = quizData[sectionKey];
+            lines.push(`--- ${section.title} ---`);
+            section.questions.forEach(q => {
+                const answer = this.answers[q.id];
+                if (!answer) return;
+                let text;
+                if (q.type === 'text') {
+                    text = answer;
+                } else {
+                    const opt = q.options && q.options.find(o => o.value === answer);
+                    text = opt ? (opt.text || opt.label) : answer;
+                }
+                lines.push(`Q: ${q.text}`);
+                lines.push(`A: ${text}`);
+                lines.push('');
+            });
+        });
+        return lines.join('\n');
+    },
+
+    sendToGHL() {
+        if (!GHL_WEBHOOK_URL) return;
+        const r = this.results;
+        const dimensionScores = {};
+        r.allDimensions.forEach(d => {
+            dimensionScores[d.info.name] = d.score;
+        });
+
+        const payload = {
+            name: r.userName,
+            email: this.answers._email || '',
+            phone: this.answers._phone || '',
+            userAge: this.getOptionText('userAge', this.answers.userAge || ''),
+            userRole: this.getOptionText('userRole', this.answers.userRole || ''),
+            userPeople: this.getOptionText('userPeople', this.answers.userPeople || ''),
+            overallScore: r.overallScore,
+            phase: r.phase,
+            physicalHealth: r.physicalHealth,
+            mentalWellness: r.mentalWellness,
+            naturalAlignment: r.naturalAlignment,
+            readinessScore: r.readinessScore,
+            strongestArea: r.strongestAreas[0] ? r.strongestAreas[0].info.name : '',
+            strongestScore: r.strongestAreas[0] ? r.strongestAreas[0].score : 0,
+            weakestArea: r.topConcerns[0] ? r.topConcerns[0].info.name : '',
+            weakestScore: r.topConcerns[0] ? r.topConcerns[0].score : 0,
+            dimensionScores: Object.entries(dimensionScores).map(([k, v]) => `${k}: ${v}%`).join(' | '),
+            quizAnswers: this._formatAllAnswers(),
+            source: 'GoNature Health Assessment'
+        };
+
+        fetch(GHL_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).catch(() => { /* silently fail — don't block the user */ });
     },
 
     renderResults() {
